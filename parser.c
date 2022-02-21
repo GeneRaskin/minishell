@@ -7,11 +7,13 @@ t_cmd	*init_cmd(void)
 	t_cmd	*new_cmd;
 
 	new_cmd = (t_cmd *) malloc(sizeof(t_cmd));
+	new_cmd->argv_top = 0;
 	new_cmd->binname = NULL;
-	new_cmd->in_filename = NULL;
+	new_cmd->in_files_top = 0;
 	new_cmd->out_filename = NULL;
 	new_cmd->append_mode = 0;
-	new_cmd->delimeter = NULL;
+	new_cmd->heredocs_top = 0;
+	new_cmd->exit_code = 0;
 	return (new_cmd);
 }
 
@@ -42,7 +44,7 @@ void	substring_dq(t_env *env)
 	}
 }
 
-void	substring(t_env *env)
+char	*substring(t_env *env)
 {
 	if (match(SUBSTRING, env))
 		advance(env, 0);
@@ -52,7 +54,7 @@ void	substring(t_env *env)
 		if (match(SINGLE_QUOTE, env))
 			advance(env, 0);
 		else
-			return ;
+			return (NULL);
 	}
 	else if (match(DOLLAR_SIGN, env))
 	{
@@ -75,18 +77,51 @@ void	substring(t_env *env)
 
 void	word(t_env *env)
 {
+	char	*word;
+	char	*temp;
+	t_cmd	*curr_cmd;
+
+	curr_cmd = env->cmd_table->cmd_arr[env->cmd_table->top];
 	if (match(HEREDOC, env) || (match(APPEND_FILE, env))
 		|| match(IN_FILE, env) || match(OUT_FILE, env))
+	{
+		if (match(APPEND_FILE, env))
+			curr_cmd->append_mode = 1;
+		else if (match(IN_FILE, env))
+			env->state |= IN_FILE_TK;
+		else if (match(OUT_FILE, env))
+			env->state |= OUT_FILE_TK;
+		else if (match(HEREDOC, env))
+			env->state |= HEREDOC_TK;
 		advance(env, 1);
-	substring(env);
+	}
+	word = substring(env);
 	while (match(SUBSTRING, env) || match(DOUBLE_QUOTE, env)
 		|| match(SINGLE_QUOTE, env))
-		substring(env);
+	{
+		temp = word;
+		word = substring(env);
+		word = ft_strjoin(temp, word);
+		free(temp);
+	}
+	if (env->state & IN_FILE_TK)
+		curr_cmd->in_filenames[curr_cmd->in_files_top++] = word;
+	else if ((env->state & OUT_FILE_TK || curr_cmd->append_mode)
+		&& !curr_cmd->out_filename)
+		curr_cmd->out_filename = word;
+	else if (env->state & HEREDOC_TK)
+		curr_cmd->delimeters[curr_cmd->heredocs_top++] = word;
+	else if (!curr_cmd->binname)
+		curr_cmd->binname = word;
+	else
+		curr_cmd->argv[curr_cmd->argv_top++] = word;
+	env->state &= ~IN_FILE_TK;
+	env->state &= ~OUT_FILE_TK;
+	env->state &= ~HEREDOC_TK;
 }
 
 void	item(t_env *env)
 {
-	env->cmd_table->cmd_arr[env->cmd_table->top++] = init_cmd();
 	if (match(LP, env))
 	{
 		advance(env, 1);
@@ -105,11 +140,31 @@ void	item(t_env *env)
 
 void	command(t_env *env)
 {
+	t_cmd	*curr_cmd;
+
+	curr_cmd = init_cmd();
+	env->cmd_table->cmd_arr[env->cmd_table->top++] = curr_cmd;
 	item(env);
 	while (match(AND, env) || match(OR, env))
 	{
-		advance(env, 1);
-		item(env);
+		if ((match(AND, env) && curr_cmd->exit_code == 0)
+			|| (match(OR, env) && curr_cmd->exit_code != 0))
+		{
+			advance(env, 1);
+			curr_cmd = init_cmd();
+			env->cmd_table->cmd_arr[env->cmd_table->top++] = curr_cmd;
+			item(env);
+		}
+		else
+		{
+			while (!match(PIPE, env) && !match(SEMI, env)
+				&& !match(EOI, env))
+			{
+				advance(env, 1);
+				if (match(AND, env) || match(OR, env))
+					break ;
+			}
+		}
 	}
 }
 

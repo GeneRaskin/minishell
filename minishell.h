@@ -4,6 +4,8 @@
 # define MAX_CMD 100
 # define MAX_VARS 1000
 # define MAX_ARGV 1000
+# define MAX_INFILES 100
+# define MAX_HEREDOCS 100
 
 # include <stdio.h>
 # include <unistd.h>
@@ -16,10 +18,13 @@ typedef struct s_cmd
 	char	*binname;
 	char	*argv[MAX_ARGV];
 	int		argv_top;
-	char	*in_filename;
+	int		in_files_top;
+	int		heredocs_top;
+	char	*in_filenames[MAX_INFILES];
 	char	*out_filename;
-	char	*delimeter;
+	char	*delimeters[MAX_HEREDOCS];
 	int		append_mode;
+	int		exit_code;
 }	t_cmd;
 
 typedef struct s_cmd_table
@@ -27,6 +32,12 @@ typedef struct s_cmd_table
 	unsigned int	top;
 	t_cmd			*cmd_arr[MAX_CMD];
 }	t_cmd_table;
+
+typedef struct s_pipelist
+{
+	t_cmd_table	*cmd_table;
+	s_pipelist	*next;
+}	t_pipelist;
 
 typedef struct s_env
 {

@@ -24,6 +24,9 @@
 # define SINGLE_Q		0x1
 # define DOUBLE_Q		0x2
 # define DOLLAR			0x4
+# define HEREDOC_TK		0x8
+# define IN_FILE_TK		0x10
+# define OUT_FILE_TK	0x20
 
 # include "minishell.h"
 
