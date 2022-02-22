@@ -25,28 +25,37 @@ typedef struct s_cmd
 	char	*delimeters[MAX_HEREDOCS];
 	int		append_mode;
 	int		exit_code;
+	char	*output;
 }	t_cmd;
 
 typedef struct s_cmd_table
 {
-	unsigned int	top;
-	t_cmd			*cmd_arr[MAX_CMD];
+	int		top;
+	t_cmd	*cmd_arr[MAX_CMD];
 }	t_cmd_table;
 
 typedef struct s_pipelist
 {
-	t_cmd_table	*cmd_table;
-	s_pipelist	*next;
+	t_cmd_table			*cmd_table;
+	struct s_pipelist	*next;
 }	t_pipelist;
+
+typedef struct s_scripts
+{
+	t_pipelist			*pipelist;
+	struct s_scripts	*next;
+}	t_scripts;
 
 typedef struct s_env
 {
 	char		*yytext;
 	int			yyleng;
-	t_cmd_table	*cmd_table;
+	t_scripts	*scripts;
 	char		*env_vars[MAX_VARS];
 	int			lookahead;
 	int			state;
+	t_pipelist	*curr_pipelst;
+	t_scripts	*curr_script;
 }	t_env;
 
 void	error(const char *func_name);
