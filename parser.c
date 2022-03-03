@@ -13,7 +13,6 @@ t_cmd	*init_cmd(void)
 	new_cmd->out_filename = NULL;
 	new_cmd->append_mode = 0;
 	new_cmd->heredocs_top = -1;
-	new_cmd->exit_code = 0;
 	return (new_cmd);
 }
 
@@ -22,7 +21,7 @@ t_cmd	*get_last_cmd(t_env *env)
 	t_pipelist	*curr_pipelst;
 
 	curr_pipelst = env->curr_pipelst;
-	return (curr_pipelst->cmd_table->cmd_arr[curr_pipelst->cmd_table->top]);
+	return (curr_pipelst->cmd);
 }
 
 char	*substring_dq(t_env *env)
@@ -171,55 +170,55 @@ void	item(t_env *env)
 
 void	command(t_env *env)
 {
-	t_cmd		*curr_cmd;
-	t_pipelist	*curr_pipelst;
+	t_scripts		*curr_script;
+	t_cmd_table		*curr_cmd_table;
 
-	curr_cmd = init_cmd();
-	curr_pipelst = env->curr_pipelst;
-	curr_pipelst->cmd_table = (t_cmd_table *) malloc(sizeof(t_cmd_table));
-	curr_pipelst->cmd_table->top = -1;
-	curr_pipelst->cmd_table->cmd_arr[++curr_pipelst->cmd_table->top] = curr_cmd;
+	curr_script = env->curr_script;
+	curr_cmd_table = curr_script->cmd_table;
+	curr_cmd_table->cmd_arr[++curr_cmd_table->top] = (t_pipelist *) malloc(
+			sizeof(t_pipelist));
+	curr_cmd_table->cmd_arr[curr_cmd_table->top]->next = NULL;
+	env->curr_pipelst = curr_cmd_table->cmd_arr[curr_cmd_table->top];
+	env->curr_pipelst->cmd = init_cmd();
 	item(env);
+	while (match(PIPE, env))
+	{
+		env->curr_pipelst->next = (t_pipelist *) malloc(sizeof(t_pipelist));
+		env->curr_pipelst = env->curr_pipelst->next;
+		env->curr_pipelst->next = NULL;
+		env->curr_pipelst->cmd = init_cmd();
+		advance(env, 1);
+		item(env);
+	}
+}
+
+void	expression(t_env *env)
+{
+	t_cmd_table		*curr_cmd_table;
+	t_scripts		*curr_script;
+
+	curr_script = env->curr_script;
+	curr_script->cmd_table = (t_cmd_table *) malloc(sizeof(t_cmd_table));
+	curr_cmd_table = curr_script->cmd_table;
+	curr_cmd_table->top = -1;
+	command(env);
 	while (match(AND, env) || match(OR, env))
 	{
-		if ((match(AND, env) && curr_cmd->exit_code == 0)
-			|| (match(OR, env) && curr_cmd->exit_code != 0))
+		if ((match(AND, env) && env->exit_code == 0)
+			|| (match(OR, env) && env->exit_code != 0))
 		{
 			advance(env, 1);
-			curr_cmd = init_cmd();
-			curr_pipelst->cmd_table->cmd_arr[++curr_pipelst->cmd_table->top]
-				= curr_cmd;
-			item(env);
+			command(env);
 		}
 		else
 		{
-			while (!match(PIPE, env) && !match(SEMI, env)
-				&& !match(EOI, env))
+			while (!match(SEMI, env) && !match(EOI, env))
 			{
 				advance(env, 1);
 				if (match(AND, env) || match(OR, env))
 					break ;
 			}
 		}
-	}
-}
-
-void	expression(t_env *env)
-{
-	t_scripts	*curr_script;
-
-	curr_script = env->curr_script;
-	curr_script->pipelist = (t_pipelist *) malloc(sizeof(t_pipelist));
-	curr_script->pipelist->next = NULL;
-	env->curr_pipelst = curr_script->pipelist;
-	command(env);
-	while (match(PIPE, env))
-	{
-		env->curr_pipelst->next = (t_pipelist *) malloc(sizeof(t_pipelist));
-		env->curr_pipelst = env->curr_pipelst->next;
-		env->curr_pipelst->next = NULL;
-		advance(env, 1);
-		command(env);
 	}
 }
 

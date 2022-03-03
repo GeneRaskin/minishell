@@ -13,6 +13,8 @@
 # include "libft/libft.h"
 # include "lex.h"
 
+extern char	**environ;
+
 typedef struct s_cmd
 {
 	char	*binname;
@@ -24,25 +26,24 @@ typedef struct s_cmd
 	char	*out_filename;
 	char	*delimeters[MAX_HEREDOCS];
 	int		append_mode;
-	int		exit_code;
 	char	*output;
 }	t_cmd;
 
-typedef struct s_cmd_table
-{
-	int		top;
-	t_cmd	*cmd_arr[MAX_CMD];
-}	t_cmd_table;
-
 typedef struct s_pipelist
 {
-	t_cmd_table			*cmd_table;
+	t_cmd				*cmd;
 	struct s_pipelist	*next;
 }	t_pipelist;
 
+typedef struct s_cmd_table
+{
+	int			top;
+	t_pipelist	*cmd_arr[MAX_CMD];
+}	t_cmd_table;
+
 typedef struct s_scripts
 {
-	t_pipelist			*pipelist;
+	t_cmd_table			*cmd_table;
 	struct s_scripts	*next;
 }	t_scripts;
 
@@ -56,6 +57,8 @@ typedef struct s_env
 	int			state;
 	t_pipelist	*curr_pipelst;
 	t_scripts	*curr_script;
+	int			exit_code;
+	char		**envp;
 }	t_env;
 
 void	error(const char *func_name);
