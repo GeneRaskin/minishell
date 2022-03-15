@@ -12,4 +12,4 @@ int	main(void)
 	env.exit_code = -1;
 	parse_tree = statements(&env);
 	executor(parse_tree, &env, STDIN_FILENO, STDOUT_FILENO);
-}
+} 

@@ -92,7 +92,7 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 	if (!curr_process)
 	{
 		if (curr_pipelist->next != NULL)
-			close(second_p[0]);
+			close_descriptors(1, second_p[0]);
 		if (curr_pipelist->type == NEXT_PIPELST)
 		{
 			set_input_fd(curr_pipelist->u_item.cmd, global_in);
@@ -125,14 +125,12 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 	{
 		first_p[0] = dup(second_p[0]);
 		first_p[1] = dup(second_p[1]);
-		close(second_p[0]);
-		close(second_p[1]);
+		close_descriptors(2, second_p[0], second_p[1]);
 		pipe(second_p);
 		curr_process = fork();
 		if (!curr_process)
 		{
-			close(first_p[1]);
-			close(second_p[0]);
+			close_descriptors(2, first_p[1], second_p[0]);
 			if (curr_pipelist->type == NEXT_PIPELST)
 			{
 				set_input_fd(curr_pipelist->u_item.cmd, first_p[0]);
@@ -143,14 +141,13 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 				executor(curr_pipelist->u_item.script, env, first_p[0],
 					second_p[1]);
 		}
-		close(first_p[0]);
-		close(first_p[1]);
+		close_descriptors(2, first_p[0], first_p[1]);
 		curr_pipelist = curr_pipelist->next;
 	}
 	curr_process = fork();
 	if (!curr_process)
 	{
-		close(second_p[1]);
+		close_descriptors(1, second_p[1]);
 		if (curr_pipelist->type == NEXT_PIPELST)
 		{
 			set_input_fd(curr_pipelist->u_item.cmd, second_p[0]);
@@ -161,8 +158,7 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 			executor(curr_pipelist->u_item.script, env,
 				second_p[0], global_out);
 	}
-	close(second_p[1]);
-	close(second_p[0]);
+	close_descriptors(2, second_p[1], second_p[0]);
 	while (wait(&status) > 0)
 		;
 	env->exit_code = WEXITSTATUS(status);

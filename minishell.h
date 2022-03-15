@@ -82,5 +82,6 @@ void		error(const char *func_name);
 void		advance(t_env *env, int skip_spaces);
 int			match(int token, t_env *env);
 t_scripts	*statements(t_env *env);
+void    	close_descriptors(int num_fd, ...);
 
 #endif
