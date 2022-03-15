@@ -1,6 +1,6 @@
 #include "minishell.h"
 
-void	item(t_env *env);
+void	item(t_env *env, t_scripts *scripts);
 
 t_cmd	*init_cmd(void)
 {
@@ -8,20 +8,19 @@ t_cmd	*init_cmd(void)
 
 	new_cmd = (t_cmd *) malloc(sizeof(t_cmd));
 	new_cmd->argv_top = -1;
-	new_cmd->binname = NULL;
-	new_cmd->in_files_top = -1;
 	new_cmd->out_filename = NULL;
+	new_cmd->in_filename = NULL;
 	new_cmd->append_mode = 0;
 	new_cmd->heredocs_top = -1;
 	return (new_cmd);
 }
 
-t_cmd	*get_last_cmd(t_env *env)
+t_cmd	*get_last_cmd(t_scripts *scripts)
 {
 	t_pipelist	*curr_pipelst;
 
-	curr_pipelst = env->curr_pipelst;
-	return (curr_pipelst->cmd);
+	curr_pipelst = scripts->curr_pipelst;
+	return (curr_pipelst->u_item.cmd);
 }
 
 char	*substring_dq(t_env *env)
@@ -46,7 +45,8 @@ char	*substring_dq(t_env *env)
 			if (match(LP, env))
 			{
 				env->state &= ~DOUBLE_Q;
-				item(env);
+				advance(env, 1);
+				statements(env);
 				env->state |= DOUBLE_Q;
 			}
 			else if (match(VAR, env))
@@ -92,7 +92,10 @@ char	*substring(t_env *env)
 	{
 		advance(env, 0);
 		if (match(LP, env))
-			item(env);
+		{
+			advance(env, 1);
+			statements(env);
+		}
 		else if (match(VAR, env))
 			advance(env, 0);
 	}
@@ -105,13 +108,13 @@ char	*substring(t_env *env)
 	return (NULL);
 }
 
-void	word(t_env *env)
+void	word(t_env *env, t_scripts *scripts)
 {
 	char		*word;
 	char		*temp;
 	t_cmd		*curr_cmd;
 
-	curr_cmd = get_last_cmd(env);
+	curr_cmd = get_last_cmd(scripts);
 	if (match(HEREDOC, env) || (match(APPEND_FILE, env))
 		|| match(IN_FILE, env) || match(OUT_FILE, env))
 	{
@@ -135,14 +138,12 @@ void	word(t_env *env)
 		free(temp);
 	}
 	if (env->state & IN_FILE_TK)
-		curr_cmd->in_filenames[++curr_cmd->in_files_top] = word;
+		curr_cmd->in_filename = word;
 	else if ((env->state & OUT_FILE_TK || curr_cmd->append_mode)
 		&& !curr_cmd->out_filename)
 		curr_cmd->out_filename = word;
 	else if (env->state & HEREDOC_TK)
 		curr_cmd->delimeters[++curr_cmd->heredocs_top] = word;
-	else if (!curr_cmd->binname)
-		curr_cmd->binname = word;
 	else
 		curr_cmd->argv[++curr_cmd->argv_top] = word;
 	env->state &= ~IN_FILE_TK;
@@ -150,94 +151,91 @@ void	word(t_env *env)
 	env->state &= ~HEREDOC_TK;
 }
 
-void	item(t_env *env)
+void	item(t_env *env, t_scripts *scripts)
 {
 	if (match(LP, env))
 	{
 		advance(env, 1);
-		statements(env);
+		scripts->curr_pipelst->u_item.script = statements(env);
+		scripts->curr_pipelst->type = NEXT_SCRIPT;
 		if (match(RP, env))
 			advance(env, 1);
 		return ;
 	}
-	word(env);
+	scripts->curr_pipelst->u_item.cmd = init_cmd();
+	scripts->curr_pipelst->type = NEXT_PIPELST;
+	word(env, scripts);
 	while (match(SPACE, env))
 	{
 		advance(env, 1);
-		word(env);
+		word(env, scripts);
 	}
 }
 
-void	command(t_env *env)
+void	command(t_env *env, t_scripts *scripts)
 {
 	t_scripts		*curr_script;
 	t_cmd_table		*curr_cmd_table;
 
-	curr_script = env->curr_script;
+	curr_script = scripts->curr_script;
 	curr_cmd_table = curr_script->cmd_table;
 	curr_cmd_table->cmd_arr[++curr_cmd_table->top] = (t_pipelist *) malloc(
 			sizeof(t_pipelist));
 	curr_cmd_table->cmd_arr[curr_cmd_table->top]->next = NULL;
-	env->curr_pipelst = curr_cmd_table->cmd_arr[curr_cmd_table->top];
-	env->curr_pipelst->cmd = init_cmd();
-	item(env);
+	scripts->curr_pipelst = curr_cmd_table->cmd_arr[curr_cmd_table->top];
+	item(env, scripts);
 	while (match(PIPE, env))
 	{
-		env->curr_pipelst->next = (t_pipelist *) malloc(sizeof(t_pipelist));
-		env->curr_pipelst = env->curr_pipelst->next;
-		env->curr_pipelst->next = NULL;
-		env->curr_pipelst->cmd = init_cmd();
+		scripts->curr_pipelst->next = (t_pipelist *) malloc(
+				sizeof(t_pipelist));
+		scripts->curr_pipelst = scripts->curr_pipelst->next;
+		scripts->curr_pipelst->next = NULL;
 		advance(env, 1);
-		item(env);
+		item(env, scripts);
 	}
 }
 
-void	expression(t_env *env)
+void	expression(t_env *env, t_scripts *scripts)
 {
 	t_cmd_table		*curr_cmd_table;
 	t_scripts		*curr_script;
 
-	curr_script = env->curr_script;
+	curr_script = scripts->curr_script;
 	curr_script->cmd_table = (t_cmd_table *) malloc(sizeof(t_cmd_table));
 	curr_cmd_table = curr_script->cmd_table;
 	curr_cmd_table->top = -1;
-	command(env);
+	command(env, scripts);
+	curr_cmd_table->logical_op[0] = 0;
 	while (match(AND, env) || match(OR, env))
 	{
-		if ((match(AND, env) && env->exit_code == 0)
-			|| (match(OR, env) && env->exit_code != 0))
-		{
-			advance(env, 1);
-			command(env);
-		}
-		else
-		{
-			while (!match(SEMI, env) && !match(EOI, env))
-			{
-				advance(env, 1);
-				if (match(AND, env) || match(OR, env))
-					break ;
-			}
-		}
+		if (match(AND, env))
+			curr_cmd_table->logical_op[curr_cmd_table->top + 1] = AND;
+		else if (match(OR, env))
+			curr_cmd_table->logical_op[curr_cmd_table->top + 1] = OR;
+		advance(env, 1);
+		command(env, scripts);
 	}
 }
 
-void	statements(t_env *env)
+t_scripts	*statements(t_env *env)
 {
-	env->scripts = (t_scripts *) malloc(sizeof(t_scripts));
-	env->scripts->next = NULL;
-	env->curr_script = env->scripts;
+	t_scripts	*scripts;
+
+	scripts = (t_scripts *) malloc(sizeof(t_scripts));
+	scripts->next = NULL;
+	scripts->curr_script = scripts;
 	while (!match(EOI, env))
 	{
-		expression(env);
+		expression(env, scripts);
 		if (match(SEMI, env))
 		{
-			env->curr_script->next = (t_scripts *) malloc(sizeof(t_scripts));
-			env->curr_script = env->curr_script->next;
-			env->curr_script->next = NULL;
+			scripts->curr_script->next = (t_scripts *) malloc(
+					sizeof(t_scripts));
+			scripts->curr_script = scripts->curr_script->next;
+			scripts->curr_script->next = NULL;
 			advance(env, 1);
 		}
 		else
-			return ;
+			return (scripts);
 	}
 }
