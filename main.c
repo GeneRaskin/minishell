@@ -13,6 +13,8 @@ int	main(void)
 {
 	t_env		env;
 	t_scripts	*parse_tree;
+	pid_t		curr_process;
+	int			status;
 
 	while (1)
 	{
@@ -25,6 +27,12 @@ int	main(void)
 			env.yytext++;
 		parse_tree = statements(&env);
 		if (parse_tree)
-			executor(parse_tree, &env, STDIN_FILENO, STDOUT_FILENO);
+		{
+			curr_process = fork();
+			if (!curr_process)
+				executor(parse_tree, &env, STDIN_FILENO, STDOUT_FILENO);
+		}
+		while (wait(&status) > 0)
+			;
 	}
 }

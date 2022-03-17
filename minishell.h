@@ -1,8 +1,6 @@
 #ifndef MINISHELL_H
 # define MINISHELL_H
 
-# define MAX_CMD 100
-# define MAX_VARS 1000
 # define MAX_ARGV 1000
 # define MAX_HEREDOCS 100
 # define SHELL_NAME "gene_shell$ "
@@ -17,7 +15,6 @@
 # include "get_next_line/get_next_line.h"
 
 extern char					**environ;
-typedef struct s_scripts	t_scripts;
 
 typedef struct s_cmd
 {
@@ -34,11 +31,28 @@ typedef struct s_cmd
 # define NEXT_PIPELST 0x1
 # define NEXT_SCRIPT 0x2
 
+typedef struct s_env_vars
+{
+	char				*name;
+	char				*value;
+	struct s_env_vars	*next;
+}	t_env_vars;
+
+typedef struct s_env
+{
+	char		*yytext;
+	int			yyleng;
+	t_env_vars	*env_vars;
+	int			lookahead;
+	int			state;
+	int			exit_code;
+}	t_env;
+
 typedef struct s_pipelist
 {
 	union {
-		t_cmd		*cmd;
-		t_scripts	*script;
+		t_cmd				*cmd;
+		struct s_scripts	*script;
 	}	u_item;
 	int					type;
 	struct s_pipelist	*next;
@@ -46,45 +60,32 @@ typedef struct s_pipelist
 
 typedef struct s_cmd_table
 {
-	int			top;
-	int			logical_op[MAX_CMD];
-	t_pipelist	*cmd_arr[MAX_CMD];
+	int					logical_op;
+	t_pipelist			*pipelist;
+	struct s_cmd_table	*next;
 }	t_cmd_table;
-
-typedef struct s_env
-{
-	char		*yytext;
-	int			yyleng;
-	char		*env_vars[MAX_VARS];
-	int			lookahead;
-	int			state;
-	int			exit_code;
-}	t_env;
 
 typedef struct s_scripts
 {
 	t_cmd_table			*cmd_table;
 	struct s_scripts	*next;
-	t_pipelist			*curr_pipelst;
-	t_scripts			*curr_script;
 }	t_scripts;
 
-# include "executor.h"
-
-/*typedef struct s_statement
+typedef struct s_curr_items_ptrs
 {
-	t_scripts	*scripts;
 	t_pipelist	*curr_pipelst;
+	t_cmd_table	*curr_cmd_table;
 	t_scripts	*curr_script;
-	int			in_fd;
-	int			out_fd;
-}	t_statement;*/
+}	t_curr_items_ptrs;
 
 void		error(const char *func_name);
 void		advance(t_env *env, int skip_spaces);
 int			match(int token, t_env *env);
 t_scripts	*statements(t_env *env);
 void		close_descriptors(int num_fd, ...);
+void		executor(t_scripts *parse_tree, t_env *env, int global_in,
+				int global_out);
 int			ft_isspace(char c);
+int			legal_lookahead(int token, ...);
 
 #endif

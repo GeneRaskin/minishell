@@ -1,6 +1,6 @@
 #include "minishell.h"
 
-void	item(t_env *env, t_scripts *scripts);
+void	item(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs);
 
 t_cmd	*init_cmd(void)
 {
@@ -13,14 +13,6 @@ t_cmd	*init_cmd(void)
 	new_cmd->append_mode = 0;
 	new_cmd->heredocs_top = -1;
 	return (new_cmd);
-}
-
-t_cmd	*get_last_cmd(t_scripts *scripts)
-{
-	t_pipelist	*curr_pipelst;
-
-	curr_pipelst = scripts->curr_pipelst;
-	return (curr_pipelst->u_item.cmd);
 }
 
 char	*substring_dq(t_env *env)
@@ -108,13 +100,13 @@ char	*substring(t_env *env)
 	return (NULL);
 }
 
-void	word(t_env *env, t_scripts *scripts)
+void	word(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
 {
 	char		*word;
 	char		*temp;
 	t_cmd		*curr_cmd;
 
-	curr_cmd = get_last_cmd(scripts);
+	curr_cmd = ptrs->curr_pipelst->u_item.cmd;
 	if (match(HEREDOC, env) || (match(APPEND_FILE, env))
 		|| match(IN_FILE, env) || match(OUT_FILE, env))
 	{
@@ -151,91 +143,91 @@ void	word(t_env *env, t_scripts *scripts)
 	env->state &= ~HEREDOC_TK;
 }
 
-void	item(t_env *env, t_scripts *scripts)
+void	item(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
 {
 	if (match(LP, env))
 	{
 		advance(env, 1);
-		scripts->curr_pipelst->u_item.script = statements(env);
-		scripts->curr_pipelst->type = NEXT_SCRIPT;
+		ptrs->curr_pipelst->u_item.script = statements(env);
+		ptrs->curr_pipelst->type = NEXT_SCRIPT;
 		if (match(RP, env))
 			advance(env, 1);
 		return ;
 	}
-	scripts->curr_pipelst->u_item.cmd = init_cmd();
-	scripts->curr_pipelst->type = NEXT_PIPELST;
-	word(env, scripts);
+	ptrs->curr_pipelst->u_item.cmd = init_cmd();
+	ptrs->curr_pipelst->type = NEXT_PIPELST;
+	word(env, scripts, ptrs);
 	while (match(SPACE, env))
 	{
 		advance(env, 1);
-		word(env, scripts);
+		word(env, scripts, ptrs);
 	}
 }
 
-void	command(t_env *env, t_scripts *scripts)
+void	command(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
 {
-	t_scripts		*curr_script;
 	t_cmd_table		*curr_cmd_table;
 
-	curr_script = scripts->curr_script;
-	curr_cmd_table = curr_script->cmd_table;
-	curr_cmd_table->cmd_arr[++curr_cmd_table->top] = (t_pipelist *) malloc(
+	curr_cmd_table = ptrs->curr_cmd_table;
+	curr_cmd_table->pipelist = (t_pipelist *) malloc(
 			sizeof(t_pipelist));
-	curr_cmd_table->cmd_arr[curr_cmd_table->top]->next = NULL;
-	scripts->curr_pipelst = curr_cmd_table->cmd_arr[curr_cmd_table->top];
-	item(env, scripts);
+	curr_cmd_table->pipelist->next = NULL;
+	ptrs->curr_pipelst = curr_cmd_table->pipelist;
+	item(env, scripts, ptrs);
 	while (match(PIPE, env))
 	{
-		scripts->curr_pipelst->next = (t_pipelist *) malloc(
+		ptrs->curr_pipelst->next = (t_pipelist *) malloc(
 				sizeof(t_pipelist));
-		scripts->curr_pipelst = scripts->curr_pipelst->next;
-		scripts->curr_pipelst->next = NULL;
+		ptrs->curr_pipelst = ptrs->curr_pipelst->next;
+		ptrs->curr_pipelst->next = NULL;
 		advance(env, 1);
-		item(env, scripts);
+		item(env, scripts, ptrs);
 	}
 }
 
-void	expression(t_env *env, t_scripts *scripts)
+void	expression(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
 {
-	t_cmd_table		*curr_cmd_table;
 	t_scripts		*curr_script;
 
-	curr_script = scripts->curr_script;
+	curr_script = ptrs->curr_script;
 	curr_script->cmd_table = (t_cmd_table *) malloc(sizeof(t_cmd_table));
-	curr_cmd_table = curr_script->cmd_table;
-	curr_cmd_table->top = -1;
-	command(env, scripts);
-	curr_cmd_table->logical_op[0] = 0;
+	ptrs->curr_cmd_table = curr_script->cmd_table;
+	command(env, scripts, ptrs);
+	ptrs->curr_cmd_table->logical_op = 0;
 	while (match(AND, env) || match(OR, env))
 	{
+		ptrs->curr_cmd_table->next = (t_cmd_table *)
+			malloc(sizeof(t_cmd_table));
+		ptrs->curr_cmd_table = ptrs->curr_cmd_table->next;
 		if (match(AND, env))
-			curr_cmd_table->logical_op[curr_cmd_table->top + 1] = AND;
+			ptrs->curr_cmd_table->logical_op = AND;
 		else if (match(OR, env))
-			curr_cmd_table->logical_op[curr_cmd_table->top + 1] = OR;
+			ptrs->curr_cmd_table->logical_op = OR;
 		advance(env, 1);
-		command(env, scripts);
+		command(env, scripts, ptrs);
 	}
 }
 
 t_scripts	*statements(t_env *env)
 {
-	t_scripts	*scripts;
+	t_scripts			*scripts;
+	t_curr_items_ptrs	ptrs;
 
 	if (!match(NEWLINE, env) && !match(EOI, env))
 	{
 		scripts = (t_scripts *) malloc(sizeof(t_scripts));
 		scripts->next = NULL;
-		scripts->curr_script = scripts;
+		ptrs.curr_script = scripts;
 	}
 	while (!match(NEWLINE, env) && !match(EOI, env))
 	{
-		expression(env, scripts);
+		expression(env, scripts, &ptrs);
 		if (match(SEMI, env))
 		{
-			scripts->curr_script->next = (t_scripts *) malloc(
+			ptrs.curr_script->next = (t_scripts *) malloc(
 					sizeof(t_scripts));
-			scripts->curr_script = scripts->curr_script->next;
-			scripts->curr_script->next = NULL;
+			ptrs.curr_script = ptrs.curr_script->next;
+			ptrs.curr_script->next = NULL;
 			advance(env, 1);
 		}
 		else

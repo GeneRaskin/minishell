@@ -1,4 +1,4 @@
-#include "executor.h"
+#include "minishell.h"
 
 void	free_2d_arr(void **arr)
 {
@@ -167,39 +167,28 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 void	iter_cmd_table(t_cmd_table *curr_cmd_table, t_env *env,
 						int global_in, int global_out)
 {
-	int	i;
-
-	i = 0;
-	while (i <= curr_cmd_table->top)
+	while (curr_cmd_table != NULL)
 	{
-		if (curr_cmd_table->logical_op[i] == OR)
-		{
-			if (env->exit_code == EXIT_SUCCESS)
-				i++;
-			else
-				iter_pipelist(curr_cmd_table->cmd_arr[i++], env,
-					global_in, global_out);
-		}
-		else if (curr_cmd_table->logical_op[i] == AND)
-		{
-			if (env->exit_code != EXIT_SUCCESS)
-				i++;
-			else
-				iter_pipelist(curr_cmd_table->cmd_arr[i++], env,
-					global_in, global_out);
-		}
+		if ((curr_cmd_table->logical_op == OR && env->exit_code == EXIT_SUCCESS)
+			|| (curr_cmd_table->logical_op == AND
+				&& env->exit_code != EXIT_SUCCESS))
+			curr_cmd_table = curr_cmd_table->next;
 		else
-			iter_pipelist(curr_cmd_table->cmd_arr[i++], env,
+		{
+			iter_pipelist(curr_cmd_table->pipelist, env,
 				global_in, global_out);
+			curr_cmd_table = curr_cmd_table->next;
+		}
 	}
 }
 
 void	executor(t_scripts *parse_tree, t_env *env,
-				 int global_in, int global_out)
+					int global_in, int global_out)
 {
 	while (parse_tree != NULL)
 	{
 		iter_cmd_table(parse_tree->cmd_table, env, global_in, global_out);
 		parse_tree = parse_tree->next;
 	}
+	exit(EXIT_SUCCESS);
 }
