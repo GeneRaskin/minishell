@@ -5,6 +5,7 @@
 # define MAX_VARS 1000
 # define MAX_ARGV 1000
 # define MAX_HEREDOCS 100
+# define SHELL_NAME "gene_shell$ "
 
 # include <stdio.h>
 # include <unistd.h>
@@ -13,6 +14,7 @@
 # include "lex.h"
 # include <fcntl.h>
 # include <stdarg.h>
+# include "get_next_line/get_next_line.h"
 
 extern char					**environ;
 typedef struct s_scripts	t_scripts;
@@ -82,6 +84,7 @@ void		error(const char *func_name);
 void		advance(t_env *env, int skip_spaces);
 int			match(int token, t_env *env);
 t_scripts	*statements(t_env *env);
-void    	close_descriptors(int num_fd, ...);
+void		close_descriptors(int num_fd, ...);
+int			ft_isspace(char c);
 
 #endif

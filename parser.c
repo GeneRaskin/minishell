@@ -221,10 +221,13 @@ t_scripts	*statements(t_env *env)
 {
 	t_scripts	*scripts;
 
-	scripts = (t_scripts *) malloc(sizeof(t_scripts));
-	scripts->next = NULL;
-	scripts->curr_script = scripts;
-	while (!match(EOI, env))
+	if (!match(NEWLINE, env) && !match(EOI, env))
+	{
+		scripts = (t_scripts *) malloc(sizeof(t_scripts));
+		scripts->next = NULL;
+		scripts->curr_script = scripts;
+	}
+	while (!match(NEWLINE, env) && !match(EOI, env))
 	{
 		expression(env, scripts);
 		if (match(SEMI, env))
@@ -238,4 +241,5 @@ t_scripts	*statements(t_env *env)
 		else
 			return (scripts);
 	}
+	return (NULL);
 }

@@ -19,7 +19,7 @@
 # define SUBSTRING		17
 # define VAR			18
 # define SPACE			19
-# define BUF_SIZE		128
+# define NEWLINE		20
 
 # define SINGLE_Q		0x1
 # define DOUBLE_Q		0x2

@@ -2,7 +2,7 @@
 
 int	ft_isspace(char c)
 {
-	return ((c == '\t') || (c == '\f') || (c == '\n')
+	return ((c == '\t') || (c == '\f')
 		|| (c == '\v') || (c == '\r') || (c == ' '));
 }
 
@@ -14,6 +14,8 @@ int	which_token(char **current, t_env *env)
 			return (SEMI);
 		else if (**current == '(')
 			return (LP);
+		else if (**current == '\n')
+			return (NEWLINE);
 		else if (**current == ')')
 			return (RP);
 		else if (**current == '|')
@@ -71,7 +73,8 @@ int	which_token(char **current, t_env *env)
 				&& **current != '|' && **current != '\''
 				&& **current != '"' && **current != '&'
 				&& **current != '$' && **current != ';'
-				&& **current != ')' && **current != '(')
+				&& **current != ')' && **current != '('
+				&& **current != '\n')
 				++(*current);
 			env->yyleng = *current - env->yytext;
 			return (SUBSTRING);
@@ -131,40 +134,20 @@ int	which_token(char **current, t_env *env)
 
 int	lex(t_env *env, int skip_spaces)
 {
-	static char	input_buffer[BUF_SIZE];
 	char		*current;
-	ssize_t		nbytes;
 	int			curr_token;
 
 	current = env->yytext + env->yyleng;
-	while (1)
+	while (*current)
 	{
-		if (*(env->yytext) == '\n')
-			return (EOI);
-		while (!*current)
-		{
-			current = input_buffer;
-			nbytes = read(STDIN_FILENO, input_buffer, BUF_SIZE);
-			if (!nbytes)
-			{
-				*current = '\0';
-				return (EOI);
-			}
-			else if (nbytes == -1)
-				error("read");
-			while (ft_isspace(*current))
-				current++;
-		}
-		while (*current)
-		{
-			env->yytext = current;
-			env->yyleng = 1;
-			curr_token = which_token(&current, env);
-			if (curr_token != SPACE || !skip_spaces)
-				return (curr_token);
-			current++;
-		}
+		env->yytext = current;
+		env->yyleng = 1;
+		curr_token = which_token(&current, env);
+		if (curr_token != SPACE || !skip_spaces)
+			return (curr_token);
+		current++;
 	}
+	return (EOI);
 }
 
 int	match(int token, t_env *env)
