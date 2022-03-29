@@ -34,5 +34,6 @@ int	main(void)
 		}
 		while (wait(&status) > 0)
 			;
+		free_parse_tree(parse_tree);
 	}
 }

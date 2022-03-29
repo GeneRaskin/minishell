@@ -87,5 +87,6 @@ void		executor(t_scripts *parse_tree, t_env *env, int global_in,
 				int global_out);
 int			ft_isspace(char c);
 int			legal_lookahead(int token, ...);
+void		free_parse_tree(t_scripts *parse_tree);
 
 #endif
