@@ -12,7 +12,6 @@
 # include "lex.h"
 # include <fcntl.h>
 # include <stdarg.h>
-# include "get_next_line/get_next_line.h"
 
 extern char					**environ;
 
@@ -37,16 +36,6 @@ typedef struct s_env_vars
 	char				*value;
 	struct s_env_vars	*next;
 }	t_env_vars;
-
-typedef struct s_env
-{
-	char		*yytext;
-	int			yyleng;
-	t_env_vars	*env_vars;
-	int			lookahead;
-	int			state;
-	int			exit_code;
-}	t_env;
 
 typedef struct s_pipelist
 {
@@ -78,7 +67,24 @@ typedef struct s_curr_items_ptrs
 	t_scripts	*curr_script;
 }	t_curr_items_ptrs;
 
-void		error(const char *func_name);
+typedef struct s_env
+{
+	char		*yytext;
+	int			yyleng;
+	t_env_vars	*env_vars;
+	int			lookahead;
+	int			state;
+	int			exit_code;
+	char		*error_func_name;
+	char		*error_custom_msg;
+	int			opened_parens;
+}	t_env;
+
+# include "get_next_line/get_next_line.h"
+
+void		error(t_env *env);
+void		set_err_custom_msg(t_env *env, char *str);
+void		set_err_func_name(t_env *env, char *str);
 void		advance(t_env *env, int skip_spaces);
 int			match(int token, t_env *env);
 t_scripts	*statements(t_env *env);
@@ -86,7 +92,7 @@ void		close_descriptors(int num_fd, ...);
 void		executor(t_scripts *parse_tree, t_env *env, int global_in,
 				int global_out);
 int			ft_isspace(char c);
-int			legal_lookahead(int token, ...);
+int			legal_lookahead(t_env *env, int token, ...);
 void		free_parse_tree(t_scripts *parse_tree);
 
 #endif

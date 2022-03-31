@@ -11,22 +11,6 @@
 /* ************************************************************************** */
 
 #include "get_next_line.h"
-#include "../libft/libft.h"
-
-char	*ft_strdup(const char *s1)
-{
-	char	*s_copy;
-	size_t	len;
-
-	if (!s1)
-		return (s_copy = NULL);
-	len = ft_strlen(s1);
-	s_copy = (char *)malloc(sizeof(*s1) * (len + 1));
-	if (s_copy == NULL)
-		return (s_copy);
-	ft_strlcpy(s_copy, s1, len + 1);
-	return (s_copy);
-}
 
 char	*get_curr_line(char **curr_lines, size_t new_line_len)
 {
@@ -85,7 +69,7 @@ int	read_into_buffer(int fd, ssize_t *num_read, char **curr_lines)
 	return (1);
 }
 
-char	*get_next_line(int fd)
+char	*get_next_line(t_env *env, int fd)
 {
 	static char	*curr_lines = NULL;
 	ssize_t		num_read;
@@ -95,16 +79,25 @@ char	*get_next_line(int fd)
 	{
 		curr_lines = (char *)malloc(sizeof(char));
 		if (!curr_lines)
+		{
+			set_err_func_name(env, "malloc");
 			return (curr_lines);
+		}
 		*curr_lines = '\0';
 	}
 	while (ft_strchr_alt(curr_lines, '\n') == -1
 		&& read_into_buffer(fd, &num_read, &curr_lines))
+	{
 		if (!curr_lines)
+		{
+			set_err_func_name(env, "malloc");
 			return (curr_lines);
+		}
+	}
 	if (num_read < 0)
 	{
 		free(curr_lines);
+		set_err_func_name(env, "read");
 		return (curr_lines = NULL);
 	}
 	return (get_next_line_from_state(&curr_lines));

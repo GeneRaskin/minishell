@@ -15,16 +15,13 @@
 
 # include <stdlib.h>
 # include <unistd.h>
+# include "../minishell.h"
 
 # ifndef BUFFER_SIZE
 #  define BUFFER_SIZE 333
 # endif
 
-char	*get_next_line(int fd);
+char	*get_next_line(t_env *env, int fd);
 int		ft_strchr_alt(const char *s, int c);
-char	*ft_strjoin(char const *s1, char const *s2);
-size_t	ft_strlen(const char *s);
-size_t	ft_strlcpy(char *dst, const char *src, size_t dstsize);
-void	*ft_memcpy(void *dst, const void *src, size_t n);
 
 #endif
