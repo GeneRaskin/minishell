@@ -18,18 +18,16 @@ void	error(t_env *env)
 		ft_putendl_fd(env->error_custom_msg, STDERR_FILENO);
 }
 
-int	legal_lookahead(t_env *env, int token, ...)
+int	legal_lookahead(t_env *env, ...)
 {
 	va_list	legal_tokens;
 	int		curr_token;
-	int		checked_token;
 
-	va_start(legal_tokens, token);
+	va_start(legal_tokens, env);
 	curr_token = va_arg(legal_tokens, int);
-	checked_token = env->lookahead;
-	while (curr_token != -1)
+	while (curr_token != NULL_TOKEN)
 	{
-		if (curr_token == checked_token)
+		if (match(curr_token, env))
 		{
 			va_end(legal_tokens);
 			return (1);

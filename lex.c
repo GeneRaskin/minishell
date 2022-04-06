@@ -130,6 +130,7 @@ int	which_token(char **current, t_env *env)
 		}
 		return (SUBSTRING);
 	}
+	return (NULL_TOKEN);
 }
 
 int	lex(t_env *env, int skip_spaces)

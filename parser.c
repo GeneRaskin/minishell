@@ -1,6 +1,6 @@
 #include "minishell.h"
 
-void	item(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs);
+void	item(t_env *env, t_curr_items_ptrs *ptrs);
 
 t_cmd	*init_cmd(t_env *env)
 {
@@ -134,7 +134,7 @@ char	*substring(t_env *env)
 	return (NULL);
 }
 
-void	word(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
+void	word(t_env *env, t_curr_items_ptrs *ptrs)
 {
 	char		*word;
 	char		*temp;
@@ -187,7 +187,7 @@ void	word(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
 	env->state &= ~HEREDOC_TK;
 }
 
-void	item(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
+void	item(t_env *env, t_curr_items_ptrs *ptrs)
 {
 	if (match(LP, env))
 	{
@@ -197,26 +197,24 @@ void	item(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
 		if (env->error_custom_msg || env->error_func_name)
 			return ;
 		ptrs->curr_pipelst->type = NEXT_SCRIPT;
-		if (match(RP, env))
-		{
-			env->opened_parens--;
-			advance(env, 1);
-		}
+		return ;
 	}
 	ptrs->curr_pipelst->u_item.cmd = init_cmd(env);
 	if (env->error_func_name)
 		return ;
 	ptrs->curr_pipelst->type = NEXT_PIPELST;
-	word(env, scripts, ptrs);
+	word(env, ptrs);
 	if (env->error_custom_msg || env->error_func_name)
 		return ;
 	while (match(SPACE, env))
 	{
 		advance(env, 1);
-		word(env, scripts, ptrs);
+		word(env, ptrs);
 		if (env->error_custom_msg || env->error_func_name)
 			return ;
 	}
+	if (ptrs->curr_pipelst->u_item.cmd->argv_top == -1)
+		env->error_custom_msg = SYNTAX_ERR;
 }
 
 void	command(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
@@ -233,7 +231,7 @@ void	command(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
 	}
 	curr_cmd_table->pipelist->next = NULL;
 	ptrs->curr_pipelst = curr_cmd_table->pipelist;
-	item(env, scripts, ptrs);
+	item(env, ptrs);
 	if (env->error_custom_msg || env->error_func_name)
 		return ;
 	while (match(PIPE, env))
@@ -248,7 +246,7 @@ void	command(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
 		ptrs->curr_pipelst = ptrs->curr_pipelst->next;
 		ptrs->curr_pipelst->next = NULL;
 		advance(env, 1);
-		item(env, scripts, ptrs);
+		item(env, ptrs);
 		if (env->error_custom_msg || env->error_func_name)
 			return ;
 	}
@@ -293,41 +291,73 @@ void	expression(t_env *env, t_scripts *scripts, t_curr_items_ptrs *ptrs)
 	}
 }
 
+int	init_next_script(t_scripts **ptr, t_env *env)
+{
+	if (match(EOI, env) || match(NEWLINE, env))
+		return (0);
+	if (legal_lookahead(env, LP, IN_FILE, OUT_FILE,
+			HEREDOC, APPEND_FILE, SINGLE_QUOTE,
+			DOUBLE_QUOTE, DOLLAR_SIGN, SUBSTRING,
+			VAR, NULL_TOKEN))
+	{
+		*ptr = (t_scripts *) malloc(sizeof(t_scripts));
+		if (!(*ptr))
+		{
+			set_err_func_name(env, "malloc");
+			return (0);
+		}
+		(*ptr)->next = NULL;
+	}
+	else
+	{
+		env->error_custom_msg = SYNTAX_ERR;
+		return (0);
+	}
+	return (1);
+}
+
 t_scripts	*statements(t_env *env)
 {
 	t_scripts			*scripts;
 	t_curr_items_ptrs	ptrs;
 
-	if (!match(NEWLINE, env) && !match(EOI, env))
-	{
-		scripts = (t_scripts *) malloc(sizeof(t_scripts));
-		if (!scripts)
-		{
-			set_err_func_name(env, "malloc");
-			return (scripts);
-		}
-		scripts->next = NULL;
+	if (init_next_script(&scripts, env))
 		ptrs.curr_script = scripts;
-	}
 	else
 		return (NULL);
-	while (!match(NEWLINE, env) && !match(EOI, env))
+	while (1)
 	{
 		expression(env, scripts, &ptrs);
-		if (env->error_custom_msg || env->error_custom_msg)
-			return (scripts);
+		if (legal_lookahead(env, EOI, NEWLINE, NULL_TOKEN)
+			&& env->opened_parens > 0)
+		{
+			env->error_custom_msg = SYNTAX_ERR;
+			break ;
+		}
+		if (env->error_custom_msg || env->error_func_name)
+			break ;
+		if (match(RP, env) && env->opened_parens > 0)
+		{
+			env->opened_parens--;
+			advance(env, 1);
+			break ;
+		}
+		if ((match(RP, env) && !env->opened_parens)
+			|| !legal_lookahead(env, SEMI, NEWLINE,
+				EOI, NULL_TOKEN))
+		{
+			env->error_custom_msg = SYNTAX_ERR;
+			break ;
+		}
+		if (legal_lookahead(env, EOI, NEWLINE, NULL_TOKEN))
+			break ;
 		if (match(SEMI, env))
 		{
-			ptrs.curr_script->next = (t_scripts *) malloc(
-					sizeof(t_scripts));
-			if (!ptrs.curr_script->next)
-			{
-				set_err_func_name(env, "malloc");
-				return (scripts);
-			}
-			ptrs.curr_script = ptrs.curr_script->next;
-			ptrs.curr_script->next = NULL;
 			advance(env, 1);
+			if (!init_next_script(&(ptrs.curr_script->next), env))
+				break ;
+			else
+				ptrs.curr_script = ptrs.curr_script->next;
 		}
 	}
 	return (scripts);

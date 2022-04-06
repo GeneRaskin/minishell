@@ -4,6 +4,7 @@
 # define MAX_ARGV 1000
 # define MAX_HEREDOCS 100
 # define SHELL_NAME "gene_shell$ "
+# define SYNTAX_ERR "gene_shell: Syntax error"
 
 # include <stdio.h>
 # include <unistd.h>
@@ -92,7 +93,7 @@ void		close_descriptors(int num_fd, ...);
 void		executor(t_scripts *parse_tree, t_env *env, int global_in,
 				int global_out);
 int			ft_isspace(char c);
-int			legal_lookahead(t_env *env, int token, ...);
+int			legal_lookahead(t_env *env, ...);
 void		free_parse_tree(t_scripts *parse_tree);
 
 #endif

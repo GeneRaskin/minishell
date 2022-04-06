@@ -1,6 +1,7 @@
 #ifndef LEX_H
 # define LEX_H
 
+# define NULL_TOKEN		-1
 # define EOI			0
 # define SEMI			1
 # define OR				2
