@@ -1,4 +1,10 @@
-#include "minishell.h"
+#include "include/global.h"
+#include "include/get_next_line.h"
+#include "include/executor.h"
+#include "include/parser.h"
+#ifdef MALLOC_DEBUG
+# include "malloc_debug.h"
+#endif
 
 void	init_env(t_env *env)
 {
@@ -39,13 +45,18 @@ void	execute(t_env *env, t_scripts *parse_tree)
 
 int	main(void)
 {
-	t_env		env;
-	t_scripts	*parse_tree;
+	t_env			env;
+	t_scripts		*parse_tree;
+	char			*curr_line;
 
+#ifdef MALLOC_DEBUG
+	set_zone();
+#endif
 	while (1)
 	{
 		ft_putstr_fd(SHELL_NAME, STDOUT_FILENO);
 		init_env(&env);
+		curr_line = env.yytext;
 		if (env.error_func_name)
 		{
 			error(&env);
@@ -56,6 +67,10 @@ int	main(void)
 		while (ft_isspace(*(env.yytext)))
 			env.yytext++;
 		parse_tree = statements(&env);
+		free(curr_line);
 		execute(&env, parse_tree);
+#ifdef MALLOC_DEBUG
+		printf("malloc counter: %d\n", g_malloc_count);
+#endif
 	}
 }
