@@ -1,10 +1,18 @@
-#include "include/global.h"
+#include "include/error.h"
+#include "include/libft.h"
+#include "include/free.h"
 #include "include/get_next_line.h"
 #include "include/executor.h"
 #include "include/parser.h"
+#include "include/env_state.h"
+#include "include/env_vars.h"
+#include "include/parse_tree.h"
+#include <stdio.h>
 #ifdef MALLOC_DEBUG
 # include "malloc_debug.h"
+extern int	g_malloc_count;
 #endif
+#define SHELL_NAME "gene_shell$ "
 
 void	init_env(t_env *env)
 {
@@ -52,6 +60,7 @@ int	main(void)
 #ifdef MALLOC_DEBUG
 	set_zone();
 #endif
+	env.env_vars = NULL;
 	while (1)
 	{
 		ft_putstr_fd(SHELL_NAME, STDOUT_FILENO);

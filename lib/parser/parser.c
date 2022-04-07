@@ -1,4 +1,22 @@
 #include "../../include/parser.h"
+#include "../../include/tokens.h"
+#include "../../include/parse_tree.h"
+#include "../../include/env_state.h"
+#include "../../include/error.h"
+#include "../../include/lex.h"
+#include "../../include/libft.h"
+#include "../../include/env_vars.h"
+#include "../../include/executor.h"
+#include <stdio.h>
+
+typedef struct s_curr_items_ptrs
+{
+	t_pipelist	*curr_pipelst;
+	t_cmd_table	*curr_cmd_table;
+	t_scripts	*curr_script;
+}	t_curr_items_ptrs;
+
+void		item(t_env *env, t_curr_items_ptrs *ptrs);
 
 t_cmd	*init_cmd(t_env *env)
 {
@@ -27,8 +45,9 @@ t_cmd	*init_cmd(t_env *env)
 
 char	*substring_dq(t_env *env)
 {
-	char	*substr_dq;
-	char	*temp;
+	char		*substr_dq;
+	char		*temp;
+	char		*key;
 
 	if (match(DOUBLE_QUOTE, env))
 	{
@@ -38,16 +57,12 @@ char	*substring_dq(t_env *env)
 		advance(env, 0);
 		return (substr_dq);
 	}
-	if (match(SUBSTRING, env))
+	substr_dq = ft_strdup("");
+	if (!substr_dq)
 	{
-		substr_dq = ft_substr(env->yytext, 0, env->yyleng);
-		if (!substr_dq)
-		{
-			set_err_func_name(env, "malloc");
-			return (NULL);
-		}
+		set_err_func_name(env, "malloc");
+		return (NULL);
 	}
-	advance(env, 0);
 	while (!match(DOUBLE_QUOTE, env))
 	{
 		if (match(DOLLAR_SIGN, env))
@@ -55,13 +70,41 @@ char	*substring_dq(t_env *env)
 			advance(env, 0);
 			if (match(LP, env))
 			{
+				env->opened_parens++;
 				env->state &= ~DOUBLE_Q;
 				advance(env, 1);
 				statements(env);
 				env->state |= DOUBLE_Q;
 			}
 			else if (match(VAR, env))
+			{
+				temp = substr_dq;
+				key = ft_substr(env->yytext, 0, env->yyleng);
+				if (!key)
+				{
+					env->error_func_name = "malloc";
+					free(substr_dq);
+					return (NULL);
+				}
+				substr_dq = get(key, env->env_vars, env);
+				if (!substr_dq)
+					substr_dq = ft_strdup("");
+				substr_dq = ft_strjoin(temp, substr_dq);
+				if (!substr_dq)
+				{
+					set_err_func_name(env, "malloc");
+					free(temp);
+					return (NULL);
+				}
+				free(temp);
 				advance(env, 0);
+			}
+			else
+			{
+				env->error_custom_msg = SYNTAX_ERR;
+				free(substr_dq);
+				return (NULL);
+			}
 		}
 		if (match(SUBSTRING, env))
 		{
@@ -83,7 +126,7 @@ char	*substring_dq(t_env *env)
 			free(temp);
 			advance(env, 0);
 		}
-		if (match(NEWLINE, env))
+		if (match(NEWLINE, env) || match(EOI, env))
 		{
 			env->error_custom_msg = SYNTAX_ERR;
 			return (NULL);
@@ -95,7 +138,10 @@ char	*substring_dq(t_env *env)
 
 char	*substring(t_env *env)
 {
-	char	*substr;
+	char		*substr;
+	char		*key;
+	t_scripts	*scripts;
+	FILE		*tmp_file;
 
 	if (!legal_lookahead(env, SUBSTRING, SINGLE_QUOTE,
 			DOUBLE_QUOTE, DOLLAR_SIGN, NULL_TOKEN))
@@ -140,11 +186,34 @@ char	*substring(t_env *env)
 		advance(env, 0);
 		if (match(LP, env))
 		{
+			env->state &= ~DOLLAR;
+			env->opened_parens++;
 			advance(env, 1);
-			statements(env);
+			scripts = statements(env);
+			if (env->error_custom_msg || env->error_func_name)
+				return (NULL);
+			tmp_file = tmpfile();
+			executor(scripts, env, STDIN_FILENO, fileno(tmp_file));
 		}
 		else if (match(VAR, env))
+		{
+			key = ft_substr(env->yytext, 0, env->yyleng);
+			if (!key)
+			{
+				env->error_func_name = "malloc";
+				return (NULL);
+			}
+			substr = ft_strdup(get(key, env->env_vars, env));
+			if (!substr)
+				substr = ft_strdup("");
 			advance(env, 0);
+			return (substr);
+		}
+		else
+		{
+			env->error_custom_msg = SYNTAX_ERR;
+			return (NULL);
+		}
 	}
 	else
 	{
@@ -154,13 +223,58 @@ char	*substring(t_env *env)
 	}
 }
 
+int	verify_var_name(t_env *env)
+{
+	char	*var;
+	int		len;
+
+	len = 0;
+	var = env->yytext;
+	if (!ft_isalpha(*var))
+		return (0);
+	while (ft_isalnum(*var))
+	{
+		var++;
+		len++;
+	}
+	if (*var == '=')
+	{
+		env->yyleng = len;
+		return (1);
+	}
+	return (0);
+}
+
 void	word(t_env *env, t_curr_items_ptrs *ptrs)
 {
 	char		*word;
 	char		*temp;
 	t_cmd		*curr_cmd;
+	char		*key;
 
 	curr_cmd = ptrs->curr_pipelst->u_item.cmd;
+	if (curr_cmd->argv_top == -1 && verify_var_name(env))
+	{
+		key = ft_substr(env->yytext, 0, env->yyleng);
+		if (!key)
+		{
+			env->error_func_name = "malloc";
+			return ;
+		}
+		env->state |= PARSE_VAR;
+		advance(env, 1);
+		advance(env, 1);
+		word = substring(env);
+		if (!word)
+		{
+			free(word);
+			env->error_custom_msg = SYNTAX_ERR;
+			return ;
+		}
+		set(key, word, &(env->env_vars), env);
+		env->state &= ~PARSE_VAR;
+		return ;
+	}
 	if (match(HEREDOC, env) || (match(APPEND_FILE, env))
 		|| match(IN_FILE, env) || match(OUT_FILE, env))
 	{
@@ -178,7 +292,7 @@ void	word(t_env *env, t_curr_items_ptrs *ptrs)
 	if (env->error_custom_msg || env->error_func_name)
 		return ;
 	while (match(SUBSTRING, env) || match(DOUBLE_QUOTE, env)
-		|| match(SINGLE_QUOTE, env))
+		|| match(SINGLE_QUOTE, env) || match(DOLLAR_SIGN, env))
 	{
 		temp = word;
 		word = substring(env);

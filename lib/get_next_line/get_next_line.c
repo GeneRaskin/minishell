@@ -6,11 +6,21 @@
 /*   By:  <>                                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/30 14:21:29 by                   #+#    #+#             */
-/*   Updated: 2022/03/16 03:49:10 by                  ###   ########.fr       */
+/*   Updated: 2022/04/07 19:43:52 by                  ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../include/get_next_line.h"
+#include "../../include/env_state.h"
+#include <stdlib.h>
+#include "../../include/libft.h"
+#include "../../include/error.h"
+
+#ifndef BUFFER_SIZE
+# define BUFFER_SIZE 333
+#endif
+
+int	ft_strchr_alt(const char *s, int c);
 
 char	*get_curr_line(char **curr_lines, size_t new_line_len)
 {

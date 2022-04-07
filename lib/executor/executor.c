@@ -1,4 +1,28 @@
 #include "../../include/executor.h"
+#include "../../include/tokens.h"
+#include "../../include/free.h"
+#include "../../include/parse_tree.h"
+#include "../../include/env_state.h"
+#include "../../include/libft.h"
+#include "../../include/error.h"
+#include <stdarg.h>
+#include <fcntl.h>
+
+void	close_descriptors(int num_fd, ...)
+{
+	va_list	fds;
+	int		i;
+	int		curr_fd;
+
+	i = -1;
+	va_start(fds, num_fd);
+	while (++i < num_fd)
+	{
+		curr_fd = va_arg(fds, int);
+		close(curr_fd);
+	}
+	va_end(fds);
+}
 
 static int	find_path_idx(char **envp)
 {
@@ -24,17 +48,24 @@ static void	search_bin(char **paths, t_cmd *cmd, char **envp, int i)
 	free(curr_bin);
 }
 
-void	find_and_exec_cmd(t_cmd *cmd)
+void	find_and_exec_cmd(t_cmd *cmd, t_env *env)
 {
 	char	**paths;
 	int		path_idx;
 	int		i;
 
+	if (cmd->argv_top == -1)
+		return ;
 	path_idx = find_path_idx(environ);
 	paths = ft_split(environ[path_idx] + 5, ':');
 	i = -1;
 	while (paths[++i])
 		search_bin(paths, cmd, environ, i);
+	if (paths[i] == NULL)
+	{
+		env->error_custom_msg = BIN_NOT_FOUND_ERR;
+		error(env);
+	}
 	free_2d_arr((void **)paths);
 }
 
@@ -91,7 +122,7 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 				set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
 			else
 				set_output_fd(curr_pipelist->u_item.cmd, global_out);
-			find_and_exec_cmd(curr_pipelist->u_item.cmd);
+			find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
 		}
 		else if (curr_pipelist->type == NEXT_SCRIPT)
 		{
@@ -126,7 +157,7 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 			{
 				set_input_fd(curr_pipelist->u_item.cmd, first_p[0]);
 				set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
-				find_and_exec_cmd(curr_pipelist->u_item.cmd);
+				find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
 			}
 			else if (curr_pipelist->type == NEXT_SCRIPT)
 				executor(curr_pipelist->u_item.script, env, first_p[0],
@@ -143,7 +174,7 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 		{
 			set_input_fd(curr_pipelist->u_item.cmd, second_p[0]);
 			set_output_fd(curr_pipelist->u_item.cmd, global_out);
-			find_and_exec_cmd(curr_pipelist->u_item.cmd);
+			find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
 		}
 		else if (curr_pipelist->type == NEXT_SCRIPT)
 			executor(curr_pipelist->u_item.script, env,

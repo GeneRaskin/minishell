@@ -17,7 +17,6 @@ typedef struct s_cmd
 	char		*out_filename;
 	char		*delimeters[MAX_HEREDOCS];
 	int			append_mode;
-	char		*output;
 }	t_cmd;
 
 typedef struct s_pipelist

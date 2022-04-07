@@ -1,4 +1,10 @@
-#include "../../include/aux.h"
+#include "../../include/error.h"
+#include "../../include/env_state.h"
+#include "../../include/tokens.h"
+#include "../../include/lex.h"
+#include "../../include/libft.h"
+#include <stdio.h>
+#include <stdarg.h>
 
 void	set_err_custom_msg(t_env *env, char *str)
 {

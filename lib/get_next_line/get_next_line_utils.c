@@ -10,8 +10,6 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../../include/get_next_line.h"
-
 int	ft_strchr_alt(const char *s, int c)
 {
 	int	idx;

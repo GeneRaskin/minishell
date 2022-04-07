@@ -1,11 +1,13 @@
 #ifndef ENV_VARS_H
 # define ENV_VARS_H
 
-typedef struct s_env_vars
-{
-	char				*name;
-	char				*value;
-	struct s_env_vars	*next;
-}	t_env_vars;
+struct	s_env_vars;
+struct	s_env;
+
+char		*get(char *key, struct s_env_vars *vars, struct s_env *env);
+void		set(char *key, char *value, struct s_env_vars **vars,
+				struct s_env *env);
+void		free_env_vars(struct s_env_vars *vars);
+void		unset(char *key, struct s_env *env);
 
 #endif
