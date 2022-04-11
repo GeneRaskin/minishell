@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include "../../include/parse_tree.h"
 
-void	free_parse_tree(t_scripts *parse_tree);
-
 void	free_2d_arr(void **arr)
 {
 	int	i;

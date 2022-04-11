@@ -4,17 +4,22 @@
 #include "include/executor.h"
 #include "include/parser.h"
 #include "include/env_state.h"
+#include "include/env_vars.h"
 #include "include/parse_tree.h"
+#include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <stdio.h>
-#include "sigs.h"
 #include <sys/wait.h>
+#include <signal.h>
+#include "sigs.h"
+//#include <term.h>
 #ifdef MALLOC_DEBUG
 # include "malloc_debug.h"
 extern int	g_malloc_count;
 #endif
 #define SHELL_NAME "gene_shell$ "
+
+t_env		g_env;
 
 void	init_env(t_env *env)
 {
@@ -53,42 +58,48 @@ void	execute(t_env *env, t_scripts *parse_tree)
 	}
 }
 
-int	main(void)
+static void	loop(t_env *env)
 {
-	t_env			env;
 	t_scripts		*parse_tree;
 	char			*curr_line;
 
-#ifdef MALLOC_DEBUG
-	set_zone();
-#endif
-	env.env_vars = NULL;
-	signal(SIGINT, SIG_IGN);
 	while (1)
 	{
-		init_env(&env);
-		if (env.yytext && *(env.yytext))
-			add_history(env.yytext);
-		if (!env.yytext)
+		init_env(env);
+		if (env->yytext && *(env->yytext))
+			add_history(env->yytext);
+		if (!env->yytext)
 		{
 			ft_putstr_fd("\n", STDOUT_FILENO);
+			free_env_vars(env->env_vars);
 			exit(EXIT_SUCCESS);
 		}
-		curr_line = env.yytext;
-		if (env.error_func_name)
+		else if (!*(env->yytext))
+			continue ;
+		if (env->error_func_name)
 		{
-			error(&env);
+			error(env);
 			continue ;
 		}
-		if (env.yytext == NULL)
-			continue ;
-		while (ft_isspace(*(env.yytext)))
-			env.yytext++;
-		parse_tree = statements(&env);
+		curr_line = env->yytext;
+		while (ft_isspace(*(env->yytext)))
+			env->yytext++;
+		parse_tree = statements(env);
 		free(curr_line);
-		execute(&env, parse_tree);
+		execute(env, parse_tree);
 #ifdef MALLOC_DEBUG
 		printf("malloc counter: %d\n", g_malloc_count);
 #endif
 	}
+}
+
+int	main(void)
+{
+#ifdef MALLOC_DEBUG
+	set_zone();
+#endif
+	g_env.env_vars = NULL;
+	signal(SIGINT, catch_sigint);
+	signal(SIGTSTP, SIG_IGN);
+	loop(&g_env);
 }

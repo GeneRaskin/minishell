@@ -1,5 +1,5 @@
 CC = gcc
-FLAGS = -g -Wall -Werror -Wextra
+FLAGS = -g -Wall -Werror -Wextra -O1
 LIBC = ar
 LIBC_FLAGS = -rcs
 NAME = minishell
