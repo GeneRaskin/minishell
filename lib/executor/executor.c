@@ -5,6 +5,7 @@
 #include "../../include/env_state.h"
 #include "../../include/libft.h"
 #include "../../include/error.h"
+#include <sys/wait.h>
 #include <stdarg.h>
 #include <fcntl.h>
 

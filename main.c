@@ -1,13 +1,15 @@
 #include "include/error.h"
 #include "include/libft.h"
 #include "include/free.h"
-#include "include/get_next_line.h"
 #include "include/executor.h"
 #include "include/parser.h"
 #include "include/env_state.h"
-#include "include/env_vars.h"
 #include "include/parse_tree.h"
+#include <readline/readline.h>
+#include <readline/history.h>
 #include <stdio.h>
+#include "sigs.h"
+#include <sys/wait.h>
 #ifdef MALLOC_DEBUG
 # include "malloc_debug.h"
 extern int	g_malloc_count;
@@ -24,7 +26,7 @@ void	init_env(t_env *env)
 	env->opened_parens = 0;
 	env->error_func_name = NULL;
 	env->error_custom_msg = NULL;
-	env->yytext = get_next_line(env, STDIN_FILENO);
+	env->yytext = readline(SHELL_NAME);
 }
 
 void	execute(t_env *env, t_scripts *parse_tree)
@@ -61,10 +63,17 @@ int	main(void)
 	set_zone();
 #endif
 	env.env_vars = NULL;
+	signal(SIGINT, SIG_IGN);
 	while (1)
 	{
-		ft_putstr_fd(SHELL_NAME, STDOUT_FILENO);
 		init_env(&env);
+		if (env.yytext && *(env.yytext))
+			add_history(env.yytext);
+		if (!env.yytext)
+		{
+			ft_putstr_fd("\n", STDOUT_FILENO);
+			exit(EXIT_SUCCESS);
+		}
 		curr_line = env.yytext;
 		if (env.error_func_name)
 		{

@@ -9,14 +9,18 @@ void	(*g_system_free_definite_size)(malloc_zone_t *zone, void *ptr,
 void	*my_malloc(malloc_zone_t *zone, size_t size)
 {
 	g_malloc_count++;
+#ifdef MALLOC_PRINTF
 	malloc_printf("malloc(zone=%p, size=%lu\n", zone, size);
+#endif
 	return (g_system_malloc(zone, size));
 }
 
 void	my_free(malloc_zone_t *zone, void *ptr)
 {
 	g_malloc_count--;
+#ifdef MALLOC_PRINTF
 	malloc_printf("free(zone=%p, ptr=%p)\n", zone, ptr);
+#endif
 	g_system_free(zone, ptr);
 }
 
@@ -24,7 +28,9 @@ void	my_free_definite_size(malloc_zone_t *zone, void *ptr,
 							  size_t size)
 {
 	g_malloc_count--;
+#ifdef MALLOC_PRINTF
 	malloc_printf("free_def_siz(zone=%p, ptr=%p, size=%lu)\n", zone, ptr, size);
+#endif
 	g_system_free_definite_size(zone, ptr, size);
 }
 

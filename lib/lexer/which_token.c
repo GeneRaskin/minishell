@@ -27,19 +27,14 @@ static int	single_q(char **current, t_env *env)
 int	dollar(char **current, t_env *env)
 {
 	env->state &= ~DOLLAR;
-	if (**current == '(')
-		return (LP);
-	else
-	{
-		if (!ft_isalpha(**current))
-			return (NULL_TOKEN);
-		while (**current && ft_isalnum(**current))
-			++(*current);
-		env->yyleng = *current - env->yytext;
-		if (env->yyleng == 0)
-			return (NULL_TOKEN);
-		return (VAR);
-	}
+	if (!ft_isalpha(**current))
+		return (NULL_TOKEN);
+	while (**current && ft_isalnum(**current))
+		++(*current);
+	env->yyleng = *current - env->yytext;
+	if (env->yyleng == 0)
+		return (NULL_TOKEN);
+	return (VAR);
 }
 
 static int	double_quotes(char **current, t_env *env)
