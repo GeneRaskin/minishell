@@ -1,14 +1,15 @@
 #include "sigs.h"
-#include "include/env_state.h"
-#include "include/tokens.h"
 #include "include/libft.h"
+#include <stdio.h>
+#include <readline/readline.h>
 #include <signal.h>
-
-extern t_env	g_env;
 
 void	catch_sigint(int signum)
 {
 	(void) signum;
-	g_env.state |= END_READLINE;
+	ft_putchar_fd('\n', STDOUT_FILENO);
+	rl_on_new_line();
+	rl_replace_line("", 0);
+	rl_redisplay();
 	signal(SIGINT, catch_sigint);
 }

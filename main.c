@@ -12,14 +12,11 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include "sigs.h"
-//#include <term.h>
 #ifdef MALLOC_DEBUG
 # include "malloc_debug.h"
 extern int	g_malloc_count;
 #endif
 #define SHELL_NAME "gene_shell$ "
-
-t_env		g_env;
 
 void	init_env(t_env *env)
 {
@@ -95,11 +92,13 @@ static void	loop(t_env *env)
 
 int	main(void)
 {
+	t_env	env;
 #ifdef MALLOC_DEBUG
 	set_zone();
 #endif
-	g_env.env_vars = NULL;
+	env.env_vars = NULL;
 	signal(SIGINT, catch_sigint);
 	signal(SIGTSTP, SIG_IGN);
-	loop(&g_env);
+	signal(SIGQUIT, SIG_IGN);
+	loop(&env);
 }

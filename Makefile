@@ -42,7 +42,7 @@ lib/free/clear.o: lib/free/clear.c
 #main rules
 OBJS_MAIN = main.o sigs.o
 $(OBJS_MAIN): $(OBJS_MAIN:.o=.c)
-	$(CC) $(FLAGS) -c $^
+	$(CC) $(FLAGS) -I/usr/local/opt/readline/include -c $^
 
 #error rules
 OBJS_ERROR = lib/error/error.o
@@ -73,8 +73,9 @@ $(EXEC_DIR)/%.o: $(EXEC_DIR)/%.c
 
 $(NAME): $(PARSER_LIB) $(EXEC_LIB) $(LEXER_LIB) $(VAR_LIB) \
 		$(OBJS_ERROR) $(OBJS_FREE) $(OBJS_MAIN) $(LIBFT)
-	$(CC) $(OBJS_ERROR) $(OBJS_FREE) $(OBJS_MAIN) $(LEXER_LIB) \
-		$(PARSER_LIB) $(EXEC_LIB) $(VAR_LIB) $(LIBFT) -lreadline -o $(NAME)
+		$(CC) $(OBJS_ERROR) $(OBJS_FREE) $(OBJS_MAIN) $(LEXER_LIB) \
+		$(PARSER_LIB) $(EXEC_LIB) $(VAR_LIB) $(LIBFT) \
+		/usr/local/opt/readline/lib/libreadline.a -ltermcap -o $(NAME)
 	
 clean:
 	/bin/rm -f $(OBJS_PARSER) $(OBJS_EXEC) $(OBJS_LEXER) $(OBJS_VAR) \

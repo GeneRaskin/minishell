@@ -29,6 +29,5 @@
 # define IN_FILE_TK		0xA
 # define OUT_FILE_TK	0x14
 # define PARSE_VAR		0x28
-# define END_READLINE	0x50
 
 #endif
