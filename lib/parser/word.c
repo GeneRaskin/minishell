@@ -60,7 +60,7 @@ static void	word_main_loop(t_env *env, char **word_ptr)
 	if (env->error_custom_msg || env->error_func_name)
 		return ;
 	while (match(SUBSTRING, env) || match(DOUBLE_QUOTE, env)
-		   || match(SINGLE_QUOTE, env) || match(DOLLAR_SIGN, env))
+		|| match(SINGLE_QUOTE, env) || match(DOLLAR_SIGN, env))
 	{
 		temp = *word_ptr;
 		*word_ptr = substring(env);

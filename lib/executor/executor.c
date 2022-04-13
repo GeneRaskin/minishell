@@ -66,6 +66,7 @@ void	find_and_exec_cmd(t_cmd *cmd, t_env *env)
 	{
 		env->error_custom_msg = BIN_NOT_FOUND_ERR;
 		error(env);
+		exit(EXIT_SUCCESS);
 	}
 	free_2d_arr((void **)paths);
 }
@@ -134,6 +135,7 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 				executor(curr_pipelist->u_item.script, env, global_in,
 					global_out);
 		}
+		exit(EXIT_SUCCESS);
 	}
 	if (curr_pipelist->next != NULL)
 		curr_pipelist = curr_pipelist->next;
@@ -163,6 +165,7 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 			else if (curr_pipelist->type == NEXT_SCRIPT)
 				executor(curr_pipelist->u_item.script, env, first_p[0],
 					second_p[1]);
+			exit(EXIT_SUCCESS);
 		}
 		close_descriptors(2, first_p[0], first_p[1]);
 		curr_pipelist = curr_pipelist->next;
@@ -180,6 +183,7 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 		else if (curr_pipelist->type == NEXT_SCRIPT)
 			executor(curr_pipelist->u_item.script, env,
 				second_p[0], global_out);
+		exit(EXIT_SUCCESS);
 	}
 	close_descriptors(2, second_p[1], second_p[0]);
 	while (wait(&status) > 0)
@@ -213,5 +217,4 @@ void	executor(t_scripts *parse_tree, t_env *env,
 		iter_cmd_table(parse_tree->cmd_table, env, global_in, global_out);
 		parse_tree = parse_tree->next;
 	}
-	exit(EXIT_SUCCESS);
 }

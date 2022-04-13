@@ -33,24 +33,14 @@ void	init_env(t_env *env)
 
 void	execute(t_env *env, t_scripts *parse_tree)
 {
-	int		status;
-	pid_t	curr_process;
-
 	if (env->error_func_name || env->error_custom_msg)
 	{
 		error(env);
 		free_parse_tree(parse_tree);
 	}
-	else
+	else if (parse_tree)
 	{
-		if (parse_tree)
-		{
-			curr_process = fork();
-			if (!curr_process)
-				executor(parse_tree, env, STDIN_FILENO, STDOUT_FILENO);
-		}
-		while (wait(&status) > 0)
-			;
+		executor(parse_tree, env, STDIN_FILENO, STDOUT_FILENO);
 		free_parse_tree(parse_tree);
 	}
 }
