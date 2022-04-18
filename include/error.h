@@ -4,6 +4,8 @@
 # define SYNTAX_ERR "gene_shell: Syntax error"
 # define KEY_NOT_FOUND_ERR "gene_shell: variable not set"
 # define BIN_NOT_FOUND_ERR "gene_shell: command not found"
+# define CD_PATH_ERROR "cd: path not found"
+# define CD_ARGC_ERROR "cd: string not in pwd"
 
 struct	s_env;
 

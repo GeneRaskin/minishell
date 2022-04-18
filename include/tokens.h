@@ -26,8 +26,8 @@
 # define DOUBLE_Q		0x2
 # define DOLLAR			0x4
 # define HEREDOC_TK		0x8
-# define IN_FILE_TK		0xA
-# define OUT_FILE_TK	0x14
-# define PARSE_VAR		0x28
+# define IN_FILE_TK		0x10
+# define OUT_FILE_TK	0x20
+# define PARSE_VAR		0x40
 
 #endif

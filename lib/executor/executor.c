@@ -5,9 +5,12 @@
 #include "../../include/env_state.h"
 #include "../../include/libft.h"
 #include "../../include/error.h"
+#include "../../include/builtins.h"
 #include <sys/wait.h>
 #include <stdarg.h>
 #include <fcntl.h>
+
+void	read_heredoc(t_cmd *cmd, int write_pipe);
 
 void	close_descriptors(int num_fd, ...)
 {
@@ -42,6 +45,7 @@ static void	search_bin(char **paths, t_cmd *cmd, char **envp, int i)
 	char	*curr_bin;
 
 	path_with_slash = ft_strjoin(paths[i], "/");
+	check_builtins(cmd, env);
 	curr_bin = ft_strjoin(path_with_slash, cmd->argv[0]);
 	free(path_with_slash);
 	if (access(curr_bin, F_OK) == 0)
@@ -73,12 +77,20 @@ void	find_and_exec_cmd(t_cmd *cmd, t_env *env)
 
 void	set_input_fd(t_cmd *cmd, int custom_in)
 {
-	int	in_file;
+	int		in_file;
+	//pid_t	curr_process;
+	int		heredoc_pipe[2];
 
 	if (cmd->in_filename)
 	{
 		in_file = open(cmd->in_filename, O_RDONLY);
 		dup2(in_file, STDIN_FILENO);
+	}
+	else if (cmd->heredocs_top > -1)
+	{
+		pipe(heredoc_pipe);
+		read_heredoc(cmd, heredoc_pipe[1]);
+		dup2(heredoc_pipe[0], STDIN_FILENO);
 	}
 	else
 		dup2(custom_in, STDIN_FILENO);

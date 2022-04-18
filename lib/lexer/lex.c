@@ -4,7 +4,7 @@
 
 int	which_token(char **current, t_env *env);
 
-int	lex(t_env *env, int skip_spaces)
+static int	lex(t_env *env, int skip_spaces)
 {
 	char		*current;
 	int			curr_token;

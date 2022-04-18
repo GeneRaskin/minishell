@@ -67,12 +67,10 @@ static int	double_quotes(char **current, t_env *env)
 int	which_token(char **current, t_env *env)
 {
 	if (!(env->state & SINGLE_Q) && !(env->state & DOUBLE_Q))
-	{
 		return (no_quotes(current, env));
-	}
 	else if (env->state & SINGLE_Q)
 		return (single_q(current, env));
-	else if (env->state & DOUBLE_QUOTE)
+	else if (env->state & DOUBLE_Q)
 		return (double_quotes(current, env));
 	return (NULL_TOKEN);
 }
