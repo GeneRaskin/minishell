@@ -6,6 +6,9 @@
 # define BIN_NOT_FOUND_ERR "gene_shell: command not found"
 # define CD_PATH_ERROR "cd: path not found"
 # define CD_ARGC_ERROR "cd: string not in pwd"
+# define PWD_ARGC_ERROR "pwd: too many arguments"
+# define ENV_ARGC_ERROR "env: too many arguments"
+# define UNSET_ARGC_ERROR "unset: not enough arguments"
 
 struct	s_env;
 

@@ -14,10 +14,11 @@ char	*get(char *key, t_env_vars *vars, t_env *env)
 {
 	size_t	keylen;
 
-	keylen = ft_strlen(key);
 	while (vars)
 	{
-		if (ft_strncmp(key, vars->name, keylen) == 0)
+		keylen = ft_strlen(vars->name);
+		if (ft_strncmp(key, vars->name, keylen) == 0
+			&& keylen == ft_strlen(key))
 			return (vars->value);
 		vars = vars->next;
 	}
@@ -54,21 +55,21 @@ void	free_env_vars(t_env_vars *vars)
 	}
 }
 
-void	unset(char *key, t_env *env)
+void	unset(char *key, t_env_vars *env_vars, t_env *env)
 {
 	t_env_vars	*prev;
 	t_env_vars	*curr;
-	size_t		keylen;
 
-	curr = env->env_vars;
-	keylen = ft_strlen(key);
-	if (curr != NULL && !ft_strncmp(key, curr->name, keylen))
+	curr = env_vars;
+	if (curr != NULL && !ft_strncmp(key, curr->name, ft_strlen(curr->name))
+		&& ft_strlen(curr->name) == ft_strlen(key))
 	{
 		env->env_vars = curr->next;
 		free_env_var(curr);
 		return ;
 	}
-	while (curr != NULL && ft_strncmp(key, curr->name, keylen))
+	while (curr != NULL && ft_strncmp(key, curr->name, ft_strlen(curr->name))
+		&& ft_strlen(curr->name) == ft_strlen(key))
 	{
 		prev = curr;
 		curr = curr->next;
@@ -87,14 +88,15 @@ void	set(char *key, char *value, t_env_vars **vars, t_env *env)
 	t_env_vars	*vars_ptr;
 	size_t		keylen;
 
-	keylen = ft_strlen(key);
 	if (!*vars)
 	{
 		*vars = init_env_vars(key, value, env);
 		return ;
 	}
 	vars_ptr = *vars;
-	if (!ft_strncmp(key, vars_ptr->name, keylen))
+	keylen = ft_strlen(vars_ptr->name);
+	if (!ft_strncmp(key, vars_ptr->name, keylen)
+		&& keylen == ft_strlen(key))
 	{
 		vars_ptr->value = value;
 		return ;
@@ -102,7 +104,9 @@ void	set(char *key, char *value, t_env_vars **vars, t_env *env)
 	while (vars_ptr->next)
 	{
 		vars_ptr = vars_ptr->next;
-		if (!ft_strncmp(key, vars_ptr->name, keylen))
+		keylen = ft_strlen(vars_ptr->name);
+		if (!ft_strncmp(key, vars_ptr->name, keylen)
+			&& keylen == ft_strlen(key))
 		{
 			vars_ptr->value = value;
 			return ;

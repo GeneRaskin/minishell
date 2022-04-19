@@ -3,6 +3,7 @@
 #include "../../include/free.h"
 #include "../../include/parse_tree.h"
 #include "../../include/env_state.h"
+#include "../../include/env_vars.h"
 #include "../../include/libft.h"
 #include "../../include/error.h"
 #include "../../include/builtins.h"
@@ -28,44 +29,65 @@ void	close_descriptors(int num_fd, ...)
 	va_end(fds);
 }
 
-static int	find_path_idx(char **envp)
+static char	**construct_envp(t_env *env)
 {
-	int	path_idx;
+	t_env_vars	*globals;
+	char		**envp;
+	int			len;
+	char		*value;
+	char		*temp;
 
-	path_idx = -1;
-	while (envp[++path_idx])
-		if (ft_strncmp(envp[path_idx], "PATH=", 5) == 0)
-			return (path_idx);
-	return (-1);
+	globals = env->global_env_vars;
+	len = 0;
+	while (globals != NULL)
+	{
+		len++;
+		globals = globals->next;
+	}
+	envp = (char **) malloc(sizeof(char *) * (len + 1));
+	len = 0;
+	globals = env->global_env_vars;
+	while (globals != NULL)
+	{
+		value = ft_strjoin(globals->name, "=");
+		temp = value;
+		value = ft_strjoin(value, globals->value);
+		free(temp);
+		globals = globals->next;
+		envp[len++] = value;
+	}
+	envp[len + 1] = NULL;
+	return (envp);
 }
 
-static void	search_bin(char **paths, t_cmd *cmd, char **envp, int i)
+static void	search_bin(char **paths, t_cmd *cmd, t_env *env, int i)
 {
 	char	*path_with_slash;
 	char	*curr_bin;
+	char	**envp;
 
 	path_with_slash = ft_strjoin(paths[i], "/");
-	check_builtins(cmd, env);
 	curr_bin = ft_strjoin(path_with_slash, cmd->argv[0]);
 	free(path_with_slash);
 	if (access(curr_bin, F_OK) == 0)
+	{
+		envp = construct_envp(env);
 		execve(curr_bin, cmd->argv, envp);
+	}
 	free(curr_bin);
 }
 
 void	find_and_exec_cmd(t_cmd *cmd, t_env *env)
 {
-	char	**paths;
-	int		path_idx;
 	int		i;
+	char	**paths;
 
 	if (cmd->argv_top == -1)
 		return ;
-	path_idx = find_path_idx(environ);
-	paths = ft_split(environ[path_idx] + 5, ':');
-	i = -1;
+	i = 0;
+	paths = ft_split(getenv("PATH"), ':');
 	while (paths[++i])
-		search_bin(paths, cmd, environ, i);
+		search_bin(paths, cmd, env, i);
 	if (paths[i] == NULL)
 	{
 		env->error_custom_msg = BIN_NOT_FOUND_ERR;
@@ -119,44 +141,68 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 {
 	int		first_p[2];
 	int		second_p[2];
+	int		standard_backup[2];
 	int		status;
 	pid_t	curr_process;
 
+	if (curr_pipelist->type == NEXT_PIPELST
+		&& curr_pipelist->u_item.cmd->argv_top == -1)
+		return ;
 	if (curr_pipelist->next != NULL)
 		pipe(second_p);
-	curr_process = fork();
-	if (!curr_process)
+	if (curr_pipelist->type == NEXT_PIPELST && find_builtin(
+			curr_pipelist->u_item.cmd, &status))
 	{
+		standard_backup[0] = dup(STDIN_FILENO);
+		standard_backup[1] = dup(STDOUT_FILENO);
+		set_input_fd(curr_pipelist->u_item.cmd, global_in);
 		if (curr_pipelist->next != NULL)
-			close_descriptors(1, second_p[0]);
-		if (curr_pipelist->type == NEXT_PIPELST)
-		{
-			set_input_fd(curr_pipelist->u_item.cmd, global_in);
-			if (curr_pipelist->next != NULL)
-				set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
-			else
-				set_output_fd(curr_pipelist->u_item.cmd, global_out);
-			find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
-		}
-		else if (curr_pipelist->type == NEXT_SCRIPT)
-		{
-			if (curr_pipelist->next != NULL)
-				executor(curr_pipelist->u_item.script, env, global_in,
-					second_p[1]);
-			else
-				executor(curr_pipelist->u_item.script, env, global_in,
-					global_out);
-		}
-		exit(EXIT_SUCCESS);
+			set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
+		else
+			set_output_fd(curr_pipelist->u_item.cmd, global_out);
+		call_builtins(curr_pipelist->u_item.cmd, env, status);
+		dup2(standard_backup[0], STDIN_FILENO);
+		dup2(standard_backup[1], STDOUT_FILENO);
+		close_descriptors(2, standard_backup[0], standard_backup[1]);
+		if (curr_pipelist->next == NULL)
+			return ;
 	}
-	if (curr_pipelist->next != NULL)
-		curr_pipelist = curr_pipelist->next;
 	else
 	{
-		while (wait(&status) > 0)
-			;
-		env->exit_code = WEXITSTATUS(status);
-		return ;
+		curr_process = fork();
+		if (!curr_process)
+		{
+			if (curr_pipelist->next != NULL)
+				close_descriptors(1, second_p[0]);
+			if (curr_pipelist->type == NEXT_PIPELST)
+			{
+				set_input_fd(curr_pipelist->u_item.cmd, global_in);
+				if (curr_pipelist->next != NULL)
+					set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
+				else
+					set_output_fd(curr_pipelist->u_item.cmd, global_out);
+				find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
+			}
+			else if (curr_pipelist->type == NEXT_SCRIPT)
+			{
+				if (curr_pipelist->next != NULL)
+					executor(curr_pipelist->u_item.script, env, global_in,
+						second_p[1]);
+				else
+					executor(curr_pipelist->u_item.script, env, global_in,
+						global_out);
+			}
+			exit(EXIT_SUCCESS);
+		}
+		if (curr_pipelist->next != NULL)
+			curr_pipelist = curr_pipelist->next;
+		else
+		{
+			while (wait(&status) > 0)
+				;
+			env->exit_code = WEXITSTATUS(status);
+			return ;
+		}
 	}
 	while (curr_pipelist->next != NULL)
 	{
@@ -164,38 +210,68 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 		first_p[1] = dup(second_p[1]);
 		close_descriptors(2, second_p[0], second_p[1]);
 		pipe(second_p);
-		curr_process = fork();
-		if (!curr_process)
+		if (curr_pipelist->type == NEXT_PIPELST && find_builtin(
+				curr_pipelist->u_item.cmd, &status))
 		{
-			close_descriptors(2, first_p[1], second_p[0]);
-			if (curr_pipelist->type == NEXT_PIPELST)
+			standard_backup[0] = dup(STDIN_FILENO);
+			standard_backup[1] = dup(STDOUT_FILENO);
+			set_input_fd(curr_pipelist->u_item.cmd, first_p[0]);
+			set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
+			call_builtins(curr_pipelist->u_item.cmd, env, status);
+			dup2(standard_backup[0], STDIN_FILENO);
+			dup2(standard_backup[1], STDOUT_FILENO);
+			close_descriptors(2, standard_backup[0], standard_backup[1]);
+		}
+		else
+		{
+			curr_process = fork();
+			if (!curr_process)
 			{
-				set_input_fd(curr_pipelist->u_item.cmd, first_p[0]);
-				set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
-				find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
+				close_descriptors(2, first_p[1], second_p[0]);
+				if (curr_pipelist->type == NEXT_PIPELST)
+				{
+					set_input_fd(curr_pipelist->u_item.cmd, first_p[0]);
+					set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
+					find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
+				}
+				else if (curr_pipelist->type == NEXT_SCRIPT)
+					executor(curr_pipelist->u_item.script, env, first_p[0],
+						second_p[1]);
+				exit(EXIT_SUCCESS);
 			}
-			else if (curr_pipelist->type == NEXT_SCRIPT)
-				executor(curr_pipelist->u_item.script, env, first_p[0],
-					second_p[1]);
-			exit(EXIT_SUCCESS);
 		}
 		close_descriptors(2, first_p[0], first_p[1]);
 		curr_pipelist = curr_pipelist->next;
 	}
-	curr_process = fork();
-	if (!curr_process)
+	if (curr_pipelist->type == NEXT_PIPELST && find_builtin(
+			curr_pipelist->u_item.cmd, &status))
 	{
-		close_descriptors(1, second_p[1]);
-		if (curr_pipelist->type == NEXT_PIPELST)
+		standard_backup[0] = dup(STDIN_FILENO);
+		standard_backup[1] = dup(STDOUT_FILENO);
+		set_input_fd(curr_pipelist->u_item.cmd, second_p[0]);
+		set_output_fd(curr_pipelist->u_item.cmd, global_out);
+		call_builtins(curr_pipelist->u_item.cmd, env, status);
+		dup2(standard_backup[0], STDIN_FILENO);
+		dup2(standard_backup[1], STDOUT_FILENO);
+		close_descriptors(2, standard_backup[0], standard_backup[1]);
+	}
+	else
+	{
+		curr_process = fork();
+		if (!curr_process)
 		{
-			set_input_fd(curr_pipelist->u_item.cmd, second_p[0]);
-			set_output_fd(curr_pipelist->u_item.cmd, global_out);
-			find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
+			close_descriptors(1, second_p[1]);
+			if (curr_pipelist->type == NEXT_PIPELST)
+			{
+				set_input_fd(curr_pipelist->u_item.cmd, second_p[0]);
+				set_output_fd(curr_pipelist->u_item.cmd, global_out);
+				find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
+			}
+			else if (curr_pipelist->type == NEXT_SCRIPT)
+				executor(curr_pipelist->u_item.script, env,
+					second_p[0], global_out);
+			exit(EXIT_SUCCESS);
 		}
-		else if (curr_pipelist->type == NEXT_SCRIPT)
-			executor(curr_pipelist->u_item.script, env,
-				second_p[0], global_out);
-		exit(EXIT_SUCCESS);
 	}
 	close_descriptors(2, second_p[1], second_p[0]);
 	while (wait(&status) > 0)

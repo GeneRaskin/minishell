@@ -48,7 +48,13 @@ static void	init_env_var(t_env *env)
 		env->error_custom_msg = SYNTAX_ERR;
 		return ;
 	}
-	set(key, word, &(env->env_vars), env);
+	if (!get(key, env->global_env_vars, env))
+	{
+		env->error_custom_msg = NULL;
+		set(key, word, &(env->env_vars), env);
+	}
+	else
+		set(key, word, &(env->global_env_vars), env);
 	env->state &= ~PARSE_VAR;
 }
 

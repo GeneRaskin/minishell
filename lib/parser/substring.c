@@ -51,7 +51,11 @@ static char	*dollar(t_env *env)
 			env->error_func_name = "malloc";
 			return (NULL);
 		}
-		substr = ft_strdup(get(key, env->env_vars, env));
+		if (!get(key, env->global_env_vars, env))
+			substr = ft_strdup(get(key, env->env_vars, env));
+		else
+			substr = ft_strdup(get(key, env->global_env_vars, env));
+		env->error_custom_msg = NULL;
 		if (!substr)
 			substr = ft_strdup("");
 		advance(env, 0);

@@ -28,26 +28,26 @@ void	init_env(t_env *env)
 	env->opened_parens = 0;
 	env->error_func_name = NULL;
 	env->error_custom_msg = NULL;
+	env->parse_tree = NULL;
 	env->yytext = readline(SHELL_NAME);
 }
 
-void	execute(t_env *env, t_scripts *parse_tree)
+void	execute(t_env *env)
 {
 	if (env->error_func_name || env->error_custom_msg)
 	{
 		error(env);
-		free_parse_tree(parse_tree);
+		free_parse_tree(env->parse_tree);
 	}
-	else if (parse_tree)
+	else if (env->parse_tree)
 	{
-		executor(parse_tree, env, STDIN_FILENO, STDOUT_FILENO);
-		free_parse_tree(parse_tree);
+		executor(env->parse_tree, env, STDIN_FILENO, STDOUT_FILENO);
+		free_parse_tree(env->parse_tree);
 	}
 }
 
 static void	loop(t_env *env)
 {
-	t_scripts		*parse_tree;
 	char			*curr_line;
 
 	while (1)
@@ -71,13 +71,30 @@ static void	loop(t_env *env)
 		curr_line = env->yytext;
 		while (ft_isspace(*(env->yytext)))
 			env->yytext++;
-		parse_tree = statements(env);
+		env->parse_tree = statements(env);
 		free(curr_line);
-		execute(env, parse_tree);
+		execute(env);
 #ifdef MALLOC_DEBUG
 		printf("malloc counter: %d\n", g_malloc_count);
 #endif
 	}
+}
+
+static t_env_vars	*init_globals(t_env *env)
+{
+	char		**curr_var;
+	char		**key_and_value;
+	t_env_vars	*global_env_vars;
+
+	curr_var = environ;
+	global_env_vars = NULL;
+	while (*curr_var != NULL)
+	{
+		key_and_value = ft_split(*curr_var, '=');
+		set(key_and_value[0], key_and_value[1], &(global_env_vars), env);
+		curr_var++;
+	}
+	return (global_env_vars);
 }
 
 int	main(void)
@@ -90,5 +107,6 @@ int	main(void)
 	signal(SIGINT, catch_sigint);
 	signal(SIGTSTP, SIG_IGN);
 	signal(SIGQUIT, SIG_IGN);
+	env.global_env_vars = init_globals(&env);
 	loop(&env);
 }
