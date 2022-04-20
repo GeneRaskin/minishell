@@ -21,5 +21,6 @@ void	ft_env(struct s_cmd *cmd, struct s_env *env);
 void	ft_exit(struct s_cmd *cmd, struct s_env *env);
 void	ft_unset(struct s_cmd *cmd, struct s_env *env);
 void	echo(struct s_cmd *cmd, struct s_env *env);
+void	export(struct s_cmd *cmd, struct s_env *env);
 
 #endif

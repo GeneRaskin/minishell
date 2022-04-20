@@ -54,9 +54,11 @@ void	item(t_env *env, t_curr_items_ptrs *ptrs)
 {
 	if (!init_word(env, ptrs))
 		return ;
-	while (match(SPACE, env))
+	while (legal_lookahead(env, SPACE, HEREDOC, OUT_FILE, IN_FILE,
+			APPEND_FILE, NULL_TOKEN))
 	{
-		advance(env, 1);
+		if (match(SPACE, env))
+			advance(env, 1);
 		if (legal_lookahead(env, SUBSTRING, SINGLE_QUOTE, DOUBLE_QUOTE,
 				DOLLAR_SIGN, HEREDOC, IN_FILE, OUT_FILE, APPEND_FILE,
 				NULL_TOKEN))

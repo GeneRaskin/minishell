@@ -18,6 +18,8 @@ void	call_builtins(t_cmd *cmd, t_env *env, int which_builtin)
 		ft_unset(cmd, env);
 	else if (which_builtin == ECHO)
 		echo(cmd, env);
+	else if (which_builtin == EXPORT)
+		export(cmd, env);
 	if (env->error_custom_msg || env->error_func_name)
 		error(env);
 }

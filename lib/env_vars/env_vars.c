@@ -68,8 +68,8 @@ void	unset(char *key, t_env_vars *env_vars, t_env *env)
 		free_env_var(curr);
 		return ;
 	}
-	while (curr != NULL && ft_strncmp(key, curr->name, ft_strlen(curr->name))
-		&& ft_strlen(curr->name) == ft_strlen(key))
+	while (curr != NULL && (ft_strncmp(key, curr->name, ft_strlen(curr->name))
+			|| ft_strlen(curr->name) != ft_strlen(key)))
 	{
 		prev = curr;
 		curr = curr->next;

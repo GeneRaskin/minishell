@@ -15,7 +15,7 @@ static char	*single_q(t_env *env)
 		if (!substr)
 			set_err_func_name(env, "malloc");
 		advance(env, 0);
-		if (!match(SINGLE_Q, env))
+		if (!match(SINGLE_QUOTE, env))
 		{
 			env->error_custom_msg = SYNTAX_ERR;
 			free(substr);

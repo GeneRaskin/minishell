@@ -64,6 +64,82 @@ void	ft_env(t_cmd *cmd, t_env *env)
 	env->exit_code = EXIT_SUCCESS;
 }
 
+static char	**get_vars_values(char *arg)
+{
+	char	**vars_values;
+	int		var_len;
+	int		val_len;
+
+	var_len = 0;
+	while (arg[var_len] && arg[var_len] != '=')
+		var_len++;
+	if (!arg[var_len])
+		vars_values = (char **) malloc(sizeof(char *) * 2);
+	else
+		vars_values = (char **) malloc(sizeof(char *) * 3);
+	vars_values[0] = ft_substr(arg, 0, var_len);
+	if (!arg[var_len])
+		vars_values[1] = NULL;
+	else
+	{
+		val_len = 0;
+		while (arg[var_len + 1 + val_len])
+			val_len++;
+		vars_values[1] = ft_substr(arg, var_len + 1, val_len);
+		vars_values[2] = NULL;
+	}
+	return (vars_values);
+}
+
+void	export(t_cmd *cmd, t_env *env)
+{
+	int		i;
+	char	**vars_values;
+	char	*value;
+
+	i = 1;
+	if (cmd->argv_top == 0)
+	{
+		ft_env(cmd, env);
+		return ;
+	}
+	else
+	{
+		while (i <= cmd->argv_top)
+		{
+			vars_values = get_vars_values(cmd->argv[i]);
+			if (vars_values[1])
+			{
+				set(vars_values[0], vars_values[1],
+					&(env->global_env_vars), env);
+				if (get(vars_values[0], env->env_vars, env))
+					unset(vars_values[0], env->env_vars, env);
+				env->error_custom_msg = NULL;
+				free(vars_values);
+			}
+			else
+			{
+				value = ft_strdup(get(vars_values[0], env->env_vars, env));
+				if (value)
+				{
+					unset(vars_values[0], env->env_vars, env);
+					set(vars_values[0], value, &(env->global_env_vars), env);
+				}
+				else
+				{
+					value = get(vars_values[0], env->global_env_vars, env);
+					if (!value)
+						set(vars_values[0], ft_strdup(""), &(env->global_env_vars), env);
+				}
+				env->error_custom_msg = NULL;
+				free(vars_values);
+			}
+			i++;
+		}
+	}
+	env->exit_code = EXIT_SUCCESS;
+}
+
 void	ft_unset(t_cmd *cmd, t_env *env)
 {
 	int	i;
