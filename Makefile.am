@@ -16,3 +16,4 @@ clean-local:
 	@rm aclocal.m4
 	@rm -r autom4te.cache/
 	@rm compile install-sh missing Makefile.in
+	@make fclean -C lib/libft

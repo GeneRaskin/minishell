@@ -1,1 +1,2 @@
- autoreconf --install
+make -C lib/libft
+autoreconf --install
