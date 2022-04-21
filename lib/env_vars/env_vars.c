@@ -10,7 +10,7 @@ void	free_env_var(t_env_vars *env_var)
 	free(env_var);
 }
 
-char	*get(char *key, t_env_vars *vars, t_env *env)
+char	*get(char *key, t_env_vars *vars)
 {
 	size_t	keylen;
 
@@ -22,7 +22,6 @@ char	*get(char *key, t_env_vars *vars, t_env *env)
 			return (vars->value);
 		vars = vars->next;
 	}
-	env->error_custom_msg = KEY_NOT_FOUND_ERR;
 	return (NULL);
 }
 
@@ -55,16 +54,16 @@ void	free_env_vars(t_env_vars *vars)
 	}
 }
 
-void	unset(char *key, t_env_vars *env_vars, t_env *env)
+void	unset(char *key, t_env_vars **env_vars)
 {
 	t_env_vars	*prev;
 	t_env_vars	*curr;
 
-	curr = env_vars;
+	curr = *env_vars;
 	if (curr != NULL && !ft_strncmp(key, curr->name, ft_strlen(curr->name))
 		&& ft_strlen(curr->name) == ft_strlen(key))
 	{
-		env->env_vars = curr->next;
+		*env_vars = curr->next;
 		free_env_var(curr);
 		return ;
 	}
@@ -75,10 +74,7 @@ void	unset(char *key, t_env_vars *env_vars, t_env *env)
 		curr = curr->next;
 	}
 	if (curr == NULL)
-	{
-		env->error_custom_msg = KEY_NOT_FOUND_ERR;
 		return ;
-	}
 	prev->next = curr->next;
 	free_env_var(curr);
 }
@@ -98,6 +94,7 @@ void	set(char *key, char *value, t_env_vars **vars, t_env *env)
 	if (!ft_strncmp(key, vars_ptr->name, keylen)
 		&& keylen == ft_strlen(key))
 	{
+		free(vars_ptr->value);
 		vars_ptr->value = value;
 		return ;
 	}
@@ -108,6 +105,7 @@ void	set(char *key, char *value, t_env_vars **vars, t_env *env)
 		if (!ft_strncmp(key, vars_ptr->name, keylen)
 			&& keylen == ft_strlen(key))
 		{
+			free(vars_ptr->value);
 			vars_ptr->value = value;
 			return ;
 		}

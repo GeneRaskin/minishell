@@ -39,20 +39,30 @@ char	*substring_dq(t_env *env)
 					free(substr_dq);
 					return (NULL);
 				}
-				substr_dq = get(key, env->env_vars, env);
+				substr_dq = get(key, env->env_vars);
 				if (!substr_dq)
-					substr_dq = get(key, env->global_env_vars, env);
+					substr_dq = get(key, env->global_env_vars);
 				if (!substr_dq)
+				{
 					substr_dq = ft_strdup("");
-				env->error_custom_msg = NULL;
+					if (!substr_dq)
+					{
+						free(temp);
+						free(key);
+						env->error_func_name = "malloc";
+						return (NULL);
+					}
+				}
 				substr_dq = ft_strjoin(temp, substr_dq);
 				if (!substr_dq)
 				{
 					set_err_func_name(env, "malloc");
+					free(key);
 					free(temp);
 					return (NULL);
 				}
 				free(temp);
+				free(key);
 				advance(env, 0);
 			}
 			else
@@ -84,6 +94,7 @@ char	*substring_dq(t_env *env)
 		}
 		if (match(NEWLINE, env) || match(EOI, env))
 		{
+			free(substr_dq);
 			env->error_custom_msg = SYNTAX_ERR;
 			return (NULL);
 		}

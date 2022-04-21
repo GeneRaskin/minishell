@@ -19,9 +19,15 @@ void	set_err_func_name(t_env *env, char *str)
 void	error(t_env *env)
 {
 	if (env->error_func_name)
+	{
 		perror(env->error_func_name);
+		env->error_func_name = NULL;
+	}
 	else if (env->error_custom_msg)
+	{
 		ft_putendl_fd(env->error_custom_msg, STDERR_FILENO);
+		env->error_custom_msg = NULL;
+	}
 }
 
 int	legal_lookahead(t_env *env, ...)

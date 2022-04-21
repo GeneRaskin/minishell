@@ -5,6 +5,7 @@
 #include "../../include/parse_tree.h"
 #include "../../include/env_vars.h"
 #include "../../include/free.h"
+#include <readline/history.h>
 #include <sys/param.h>
 
 void	cd(t_cmd *cmd, t_env *env)
@@ -110,28 +111,30 @@ void	export(t_cmd *cmd, t_env *env)
 			vars_values = get_vars_values(cmd->argv[i]);
 			if (vars_values[1])
 			{
+				value = get(vars_values[0], env->global_env_vars);
 				set(vars_values[0], vars_values[1],
 					&(env->global_env_vars), env);
-				if (get(vars_values[0], env->env_vars, env))
-					unset(vars_values[0], env->env_vars, env);
-				env->error_custom_msg = NULL;
+				if (get(vars_values[0], env->env_vars))
+					unset(vars_values[0], &(env->env_vars));
+				if (value)
+					free(vars_values[0]);
 				free(vars_values);
 			}
 			else
 			{
-				value = ft_strdup(get(vars_values[0], env->env_vars, env));
+				value = ft_strdup(get(vars_values[0], env->env_vars));
 				if (value)
 				{
-					unset(vars_values[0], env->env_vars, env);
+					unset(vars_values[0], &(env->env_vars));
 					set(vars_values[0], value, &(env->global_env_vars), env);
 				}
 				else
 				{
-					value = get(vars_values[0], env->global_env_vars, env);
+					value = get(vars_values[0], env->global_env_vars);
 					if (!value)
-						set(vars_values[0], ft_strdup(""), &(env->global_env_vars), env);
+						set(vars_values[0], ft_strdup(""),
+							&(env->global_env_vars), env);
 				}
-				env->error_custom_msg = NULL;
 				free(vars_values);
 			}
 			i++;
@@ -153,13 +156,12 @@ void	ft_unset(t_cmd *cmd, t_env *env)
 	}
 	while (i <= cmd->argv_top)
 	{
-		if (get(cmd->argv[i], env->global_env_vars, env))
-			unset(cmd->argv[i], env->global_env_vars, env);
+		if (get(cmd->argv[i], env->global_env_vars))
+			unset(cmd->argv[i], &(env->global_env_vars));
 		else
-			unset(cmd->argv[i], env->env_vars, env);
+			unset(cmd->argv[i], &(env->env_vars));
 		i++;
 	}
-	env->error_custom_msg = NULL;
 	env->exit_code = EXIT_SUCCESS;
 }
 
@@ -224,5 +226,6 @@ void	ft_exit(t_cmd *cmd, t_env *env)
 	free_env_vars(env->env_vars);
 	free_env_vars(env->global_env_vars);
 	free_parse_tree(env->parse_tree);
+	clear_history();
 	exit(exit_code);
 }

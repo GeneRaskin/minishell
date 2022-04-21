@@ -42,17 +42,10 @@ static void	init_env_var(t_env *env)
 	advance(env, 1);
 	advance(env, 1);
 	word = substring(env);
-	if (!word)
-	{
-		free(word);
-		env->error_custom_msg = SYNTAX_ERR;
+	if (env->error_custom_msg || env->error_func_name)
 		return ;
-	}
-	if (!get(key, env->global_env_vars, env))
-	{
-		env->error_custom_msg = NULL;
+	if (!get(key, env->global_env_vars))
 		set(key, word, &(env->env_vars), env);
-	}
 	else
 		set(key, word, &(env->global_env_vars), env);
 	env->state &= ~PARSE_VAR;

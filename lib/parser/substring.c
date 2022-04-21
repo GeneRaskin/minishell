@@ -13,7 +13,10 @@ static char	*single_q(t_env *env)
 	{
 		substr = ft_substr(env->yytext, 0, env->yyleng);
 		if (!substr)
+		{
 			set_err_func_name(env, "malloc");
+			return (substr);
+		}
 		advance(env, 0);
 		if (!match(SINGLE_QUOTE, env))
 		{
@@ -26,7 +29,10 @@ static char	*single_q(t_env *env)
 	{
 		substr = ft_substr(env->yytext, 0, 0);
 		if (!substr)
+		{
 			set_err_func_name(env, "malloc");
+			return (substr);
+		}
 	}
 	else
 	{
@@ -51,14 +57,46 @@ static char	*dollar(t_env *env)
 			env->error_func_name = "malloc";
 			return (NULL);
 		}
-		if (!get(key, env->global_env_vars, env))
-			substr = ft_strdup(get(key, env->env_vars, env));
+		if (!get(key, env->global_env_vars))
+		{
+			substr = get(key, env->env_vars);
+			if (substr)
+			{
+				substr = ft_strdup(substr);
+				if (!substr)
+				{
+					env->error_func_name = "malloc";
+					free(key);
+					return (NULL);
+				}
+			}
+		}
 		else
-			substr = ft_strdup(get(key, env->global_env_vars, env));
-		env->error_custom_msg = NULL;
+		{
+			substr = get(key, env->global_env_vars);
+			if (substr)
+			{
+				substr = ft_strdup(substr);
+				if (!substr)
+				{
+					env->error_func_name = "malloc";
+					free(key);
+					return (NULL);
+				}
+			}
+		}
 		if (!substr)
+		{
 			substr = ft_strdup("");
+			if (!substr)
+			{
+				env->error_func_name = "malloc";
+				free(key);
+				return (NULL);
+			}
+		}
 		advance(env, 0);
+		free(key);
 		return (substr);
 	}
 	else

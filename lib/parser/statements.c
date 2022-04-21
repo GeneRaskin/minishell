@@ -29,14 +29,14 @@ static int	init_next_script(t_scripts **ptr, t_env *env)
 
 static int	syntax_checking(t_env *env)
 {
+	if (env->error_custom_msg || env->error_func_name)
+		return (0);
 	if (legal_lookahead(env, EOI, NEWLINE, NULL_TOKEN)
 		&& env->opened_parens > 0)
 	{
 		env->error_custom_msg = SYNTAX_ERR;
 		return (0);
 	}
-	if (env->error_custom_msg || env->error_func_name)
-		return (0);
 	if (match(RP, env) && env->opened_parens > 0)
 	{
 		env->opened_parens--;
@@ -45,7 +45,7 @@ static int	syntax_checking(t_env *env)
 	}
 	if ((match(RP, env) && !env->opened_parens)
 		|| !legal_lookahead(env, SEMI, NEWLINE,
-							EOI, NULL_TOKEN))
+			EOI, NULL_TOKEN))
 	{
 		env->error_custom_msg = SYNTAX_ERR;
 		return (0);

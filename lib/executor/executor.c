@@ -81,6 +81,7 @@ void	find_and_exec_cmd(t_cmd *cmd, t_env *env)
 {
 	int		i;
 	char	**paths;
+	char	**envp;
 
 	if (cmd->argv_top == -1)
 		return ;
@@ -90,6 +91,11 @@ void	find_and_exec_cmd(t_cmd *cmd, t_env *env)
 		search_bin(paths, cmd, env, i);
 	if (paths[i] == NULL)
 	{
+		if (access(cmd->argv[0], F_OK) == 0)
+		{
+			envp = construct_envp(env);
+			execve(cmd->argv[0], cmd->argv, envp);
+		}
 		env->error_custom_msg = BIN_NOT_FOUND_ERR;
 		error(env);
 		exit(EXIT_SUCCESS);

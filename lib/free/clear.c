@@ -46,7 +46,10 @@ static void	free_pipelist(t_pipelist *pipelist)
 		if (curr->type == NEXT_SCRIPT)
 			free_parse_tree(curr->u_item.script);
 		else if (curr->type == NEXT_PIPELST)
-			free_cmd(curr->u_item.cmd);
+		{
+			if (curr->u_item.cmd)
+				free_cmd(curr->u_item.cmd);
+		}
 		free(curr);
 		curr = pipelist;
 	}

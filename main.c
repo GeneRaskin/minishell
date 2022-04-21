@@ -59,6 +59,8 @@ static void	loop(t_env *env)
 		{
 			ft_putstr_fd("\n", STDOUT_FILENO);
 			free_env_vars(env->env_vars);
+			free_env_vars(env->global_env_vars);
+			clear_history();
 			exit(EXIT_SUCCESS);
 		}
 		else if (!*(env->yytext))
@@ -91,7 +93,17 @@ static t_env_vars	*init_globals(t_env *env)
 	while (*curr_var != NULL)
 	{
 		key_and_value = ft_split(*curr_var, '=');
+		if (key_and_value == NULL)
+		{
+			env->error_func_name = "malloc";
+			error(env);
+			curr_var++;
+			continue ;
+		}
 		set(key_and_value[0], key_and_value[1], &(global_env_vars), env);
+		if (env->error_func_name)
+			error(env);
+		free(key_and_value);
 		curr_var++;
 	}
 	return (global_env_vars);
@@ -104,9 +116,13 @@ int	main(void)
 	set_zone();
 #endif
 	env.env_vars = NULL;
-	signal(SIGINT, catch_sigint);
-	signal(SIGTSTP, SIG_IGN);
-	signal(SIGQUIT, SIG_IGN);
+	if (signal(SIGINT, catch_sigint) == SIG_ERR
+		|| signal(SIGTSTP, SIG_IGN) == SIG_ERR
+		|| signal(SIGQUIT, SIG_IGN) == SIG_ERR)
+	{
+		env.error_func_name = "signal";
+		error(&env);
+	}
 	env.global_env_vars = init_globals(&env);
 	loop(&env);
 }

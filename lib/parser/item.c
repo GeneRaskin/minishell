@@ -34,16 +34,16 @@ static int	init_word(t_env *env, t_curr_items_ptrs *ptrs)
 	{
 		env->opened_parens++;
 		advance(env, 1);
+		ptrs->curr_pipelst->type = NEXT_SCRIPT;
 		ptrs->curr_pipelst->u_item.script = statements(env);
 		if (env->error_custom_msg || env->error_func_name)
 			return (0);
-		ptrs->curr_pipelst->type = NEXT_SCRIPT;
 		return (0);
 	}
+	ptrs->curr_pipelst->type = NEXT_PIPELST;
 	ptrs->curr_pipelst->u_item.cmd = init_cmd(env);
 	if (env->error_func_name)
 		return (0);
-	ptrs->curr_pipelst->type = NEXT_PIPELST;
 	word(env, ptrs);
 	if (env->error_custom_msg || env->error_func_name)
 		return (0);
