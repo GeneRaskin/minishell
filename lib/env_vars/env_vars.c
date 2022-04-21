@@ -121,4 +121,5 @@ void	set(char *key, char *value, t_env_vars **vars, t_env *env)
 	vars_ptr = vars_ptr->next;
 	vars_ptr->name = key;
 	vars_ptr->value = value;
+	vars_ptr->next = NULL;
 }
