@@ -24,7 +24,7 @@ void	init_env(t_env *env)
 	env->yytext = "";
 	env->yyleng = 0;
 	env->state = 0;
-	env->exit_code = -1;
+	env->exit_code = EXIT_SUCCESS;
 	env->opened_parens = 0;
 	env->error_func_name = NULL;
 	env->error_custom_msg = NULL;
@@ -38,6 +38,7 @@ void	execute(t_env *env)
 	{
 		error(env);
 		free_parse_tree(env->parse_tree);
+		env->exit_code = EXIT_FAILURE;
 	}
 	else if (env->parse_tree)
 	{
@@ -116,6 +117,8 @@ int	main(void)
 	set_zone();
 #endif
 	env.env_vars = NULL;
+	env.error_func_name = NULL;
+	env.error_custom_msg = NULL;
 	if (signal(SIGINT, catch_sigint) == SIG_ERR
 		|| signal(SIGTSTP, SIG_IGN) == SIG_ERR
 		|| signal(SIGQUIT, SIG_IGN) == SIG_ERR)

@@ -122,9 +122,10 @@ void	export(t_cmd *cmd, t_env *env)
 			}
 			else
 			{
-				value = ft_strdup(get(vars_values[0], env->env_vars));
+				value = get(vars_values[0], env->env_vars);
 				if (value)
 				{
+					value = ft_strdup(value);
 					unset(vars_values[0], &(env->env_vars));
 					set(vars_values[0], value, &(env->global_env_vars), env);
 				}
@@ -134,6 +135,8 @@ void	export(t_cmd *cmd, t_env *env)
 					if (!value)
 						set(vars_values[0], ft_strdup(""),
 							&(env->global_env_vars), env);
+					else
+						free(vars_values[0]);
 				}
 				free(vars_values);
 			}

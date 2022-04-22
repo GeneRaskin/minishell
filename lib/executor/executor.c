@@ -3,11 +3,11 @@
 #include "../../include/free.h"
 #include "../../include/parse_tree.h"
 #include "../../include/env_state.h"
-#include "../../include/env_vars.h"
 #include "../../include/libft.h"
 #include "../../include/error.h"
 #include "../../include/builtins.h"
 #include <sys/wait.h>
+#include <sys/param.h>
 #include <stdarg.h>
 #include <fcntl.h>
 
@@ -82,6 +82,8 @@ void	find_and_exec_cmd(t_cmd *cmd, t_env *env)
 	int		i;
 	char	**paths;
 	char	**envp;
+	char	*path_with_slash[2];
+	char	curr_path[MAXPATHLEN];
 
 	if (cmd->argv_top == -1)
 		return ;
@@ -91,11 +93,15 @@ void	find_and_exec_cmd(t_cmd *cmd, t_env *env)
 		search_bin(paths, cmd, env, i);
 	if (paths[i] == NULL)
 	{
-		if (access(cmd->argv[0], F_OK) == 0)
+		path_with_slash[0] = ft_strjoin(getcwd(curr_path, MAXPATHLEN), "/");
+		path_with_slash[1] = ft_strjoin(path_with_slash[0], cmd->argv[0]);
+		free(path_with_slash[0]);
+		if (access(path_with_slash[1], F_OK) == 0)
 		{
 			envp = construct_envp(env);
-			execve(cmd->argv[0], cmd->argv, envp);
+			execve(path_with_slash[1], cmd->argv, envp);
 		}
+		free(path_with_slash[1]);
 		env->error_custom_msg = BIN_NOT_FOUND_ERR;
 		error(env);
 		exit(EXIT_SUCCESS);
