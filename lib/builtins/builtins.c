@@ -11,6 +11,7 @@
 void	cd(t_cmd *cmd, t_env *env)
 {
 	char	*pwd_value;
+	char	*dir_path;
 	char	buf[MAXPATHLEN];
 
 	if (cmd->argv_top > 1)
@@ -19,14 +20,44 @@ void	cd(t_cmd *cmd, t_env *env)
 		env->exit_code = EXIT_FAILURE;
 		return ;
 	}
-	if (chdir(cmd->argv[1]) == -1)
+	if (cmd->argv_top == 0)
 	{
-		env->error_func_name = "cd";
+		dir_path = get("HOME", env->global_env_vars);
+		if (!dir_path)
+		{
+			env->error_custom_msg = "HOME path is not set";
+			env->exit_code = EXIT_FAILURE;
+			return ;
+		}
+	}
+	else
+		dir_path = cmd->argv[1];
+	if (chdir(dir_path) == -1)
+	{
+		env->error_func_name = "chdir";
 		env->exit_code = EXIT_FAILURE;
 		return ;
 	}
-	pwd_value = ft_strjoin("PWD=", getcwd(buf, MAXPATHLEN));
+	if (getcwd(buf, MAXPATHLEN) == NULL)
+	{
+		env->error_func_name = "getcwd";
+		env->exit_code = EXIT_FAILURE;
+		return ;
+	}
+	pwd_value = ft_strjoin("PWD=", buf);
+	if (!pwd_value)
+	{
+		env->error_func_name = "malloc";
+		env->exit_code = EXIT_FAILURE;
+		return ;
+	}
 	set("PWD", pwd_value, &(env->global_env_vars), env);
+	if (env->error_func_name)
+	{
+		free(pwd_value);
+		env->exit_code = EXIT_FAILURE;
+		return ;
+	}
 	env->exit_code = EXIT_SUCCESS;
 }
 
@@ -40,9 +71,14 @@ void	pwd(t_cmd *cmd, t_env *env)
 		env->exit_code = EXIT_FAILURE;
 		return ;
 	}
-	getcwd(buf, MAXPATHLEN);
+	if (getcwd(buf, MAXPATHLEN) == NULL)
+	{
+		env->error_func_name = "getcwd";
+		env->exit_code = EXIT_FAILURE;
+		return ;
+	}
 	ft_putstr_fd(buf, STDOUT_FILENO);
-	write(STDOUT_FILENO, "\n", 1);
+	ft_putstr_fd("\n", STDOUT_FILENO);
 	env->exit_code = EXIT_SUCCESS;
 }
 
@@ -78,7 +114,14 @@ static char	**get_vars_values(char *arg)
 		vars_values = (char **) malloc(sizeof(char *) * 2);
 	else
 		vars_values = (char **) malloc(sizeof(char *) * 3);
+	if (!vars_values)
+		return (NULL);
 	vars_values[0] = ft_substr(arg, 0, var_len);
+	if (!vars_values[0])
+	{
+		free(vars_values);
+		return (NULL);
+	}
 	if (!arg[var_len])
 		vars_values[1] = NULL;
 	else
@@ -87,6 +130,12 @@ static char	**get_vars_values(char *arg)
 		while (arg[var_len + 1 + val_len])
 			val_len++;
 		vars_values[1] = ft_substr(arg, var_len + 1, val_len);
+		if (!vars_values[1])
+		{
+			free(vars_values[0]);
+			free(vars_values);
+			return (NULL);
+		}
 		vars_values[2] = NULL;
 	}
 	return (vars_values);
@@ -109,11 +158,25 @@ void	export(t_cmd *cmd, t_env *env)
 		while (i <= cmd->argv_top)
 		{
 			vars_values = get_vars_values(cmd->argv[i]);
+			if (!vars_values)
+			{
+				env->error_func_name = "malloc";
+				env->exit_code = EXIT_FAILURE;
+				return ;
+			}
 			if (vars_values[1])
 			{
 				value = get(vars_values[0], env->global_env_vars);
 				set(vars_values[0], vars_values[1],
 					&(env->global_env_vars), env);
+				if (env->error_func_name)
+				{
+					free(vars_values[1]);
+					free(vars_values[0]);
+					free(vars_values);
+					env->exit_code = EXIT_FAILURE;
+					return ;
+				}
 				if (get(vars_values[0], env->env_vars))
 					unset(vars_values[0], &(env->env_vars));
 				if (value)
@@ -126,15 +189,49 @@ void	export(t_cmd *cmd, t_env *env)
 				if (value)
 				{
 					value = ft_strdup(value);
+					if (value == NULL)
+					{
+						free(vars_values[0]);
+						free(vars_values);
+						env->exit_code = EXIT_FAILURE;
+						return ;
+					}
 					unset(vars_values[0], &(env->env_vars));
 					set(vars_values[0], value, &(env->global_env_vars), env);
+					if (env->error_func_name)
+					{
+						free(vars_values[0]);
+						free(vars_values);
+						free(value);
+						env->exit_code = EXIT_FAILURE;
+						return ;
+					}
 				}
 				else
 				{
 					value = get(vars_values[0], env->global_env_vars);
 					if (!value)
-						set(vars_values[0], ft_strdup(""),
+					{
+						value = ft_strdup("");
+						if (!value)
+						{
+							env->error_func_name = "malloc";
+							env->exit_code = EXIT_FAILURE;
+							free(vars_values[0]);
+							free(vars_values);
+							return ;
+						}
+						set(vars_values[0], value,
 							&(env->global_env_vars), env);
+						if (env->error_func_name)
+						{
+							free(value);
+							free(vars_values[0]);
+							free(vars_values);
+							env->exit_code = EXIT_FAILURE;
+							return ;
+						}
+					}
 					else
 						free(vars_values[0]);
 				}

@@ -149,7 +149,7 @@ void	set_output_fd(t_cmd *cmd, int custom_out)
 }
 
 void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
-					  int global_in, int global_out)
+			int global_in, int global_out)
 {
 	int		first_p[2];
 	int		second_p[2];
@@ -161,21 +161,46 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 		&& curr_pipelist->u_item.cmd->argv_top == -1)
 		return ;
 	if (curr_pipelist->next != NULL)
+	{
 		if (pipe(second_p) == -1)
+		{
 			env->error_func_name = "pipe";
+			return ;
+		}
+	}
 	if (curr_pipelist->type == NEXT_PIPELST && find_builtin(
 			curr_pipelist->u_item.cmd, &status))
 	{
 		standard_backup[0] = dup(STDIN_FILENO);
+		if (standard_backup[0] == -1)
+		{
+			if (curr_pipelist->next != NULL)
+				close_descriptors(2, second_p[0], second_p[1]);
+			env->error_func_name = "dup";
+			return ;
+		}
 		standard_backup[1] = dup(STDOUT_FILENO);
+		if (standard_backup[1] == -1)
+		{
+			close_descriptors(1, standard_backup[0]);
+			if (curr_pipelist->next != NULL)
+				close_descriptors(2, second_p[0], second_p[1]);
+			env->error_func_name = "dup";
+			return ;
+		}
 		set_input_fd(curr_pipelist->u_item.cmd, env, global_in);
 		if (curr_pipelist->next != NULL)
 			set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
 		else
 			set_output_fd(curr_pipelist->u_item.cmd, global_out);
 		call_builtins(curr_pipelist->u_item.cmd, env, status);
-		dup2(standard_backup[0], STDIN_FILENO);
-		dup2(standard_backup[1], STDOUT_FILENO);
+		if (dup2(standard_backup[0], STDIN_FILENO) == -1
+			|| dup2(standard_backup[1], STDOUT_FILENO) == -1)
+		{
+			close_descriptors(2, standard_backup[0], standard_backup[1]);
+			env->error_func_name = "dup2";
+			return ;
+		}
 		close_descriptors(2, standard_backup[0], standard_backup[1]);
 		if (curr_pipelist->next == NULL)
 			return ;
