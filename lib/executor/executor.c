@@ -56,7 +56,7 @@ static char	**construct_envp(t_env *env)
 		globals = globals->next;
 		envp[len++] = value;
 	}
-	envp[len + 1] = NULL;
+	envp[len] = NULL;
 	return (envp);
 }
 
