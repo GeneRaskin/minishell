@@ -1,4 +1,4 @@
-AM_CFLAGS = -Wall -Wextra
+AM_CFLAGS = -Wall -Wextra -fsanitize=address
 
 bin_PROGRAMS = minishell
 minishell_SOURCES = sigs.c sigs.h main.c lib/lexer/lex.c lib/lexer/no_quotes.c \
