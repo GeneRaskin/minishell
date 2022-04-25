@@ -54,6 +54,7 @@ static void	init_env_var(t_env *env)
 static void	word_main_loop(t_env *env, char **word_ptr)
 {
 	char		*temp;
+	char		*joined;
 
 	*word_ptr = substring(env);
 	if (env->error_custom_msg || env->error_func_name)
@@ -65,13 +66,16 @@ static void	word_main_loop(t_env *env, char **word_ptr)
 		*word_ptr = substring(env);
 		if (env->error_custom_msg || env->error_func_name)
 			return ;
-		*word_ptr = ft_strjoin(temp, *word_ptr);
-		if (!*word_ptr)
+		joined = ft_strjoin(temp, *word_ptr);
+		if (!joined)
 		{
 			free(temp);
+			free(*word_ptr);
 			set_err_func_name(env, "malloc");
 			return ;
 		}
+		free(*word_ptr);
+		*word_ptr = joined;
 		free(temp);
 	}
 }

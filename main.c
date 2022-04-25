@@ -12,10 +12,6 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include "sigs.h"
-#ifdef MALLOC_DEBUG
-# include "malloc_debug.h"
-extern int	g_malloc_count;
-#endif
 #define SHELL_NAME "gene_shell$ "
 
 void	init_env(t_env *env)
@@ -77,9 +73,6 @@ static void	loop(t_env *env)
 		env->parse_tree = statements(env);
 		free(curr_line);
 		execute(env);
-#ifdef MALLOC_DEBUG
-		printf("malloc counter: %d\n", g_malloc_count);
-#endif
 	}
 }
 
@@ -103,7 +96,11 @@ static t_env_vars	*init_globals(t_env *env)
 		}
 		set(key_and_value[0], key_and_value[1], &(global_env_vars), env);
 		if (env->error_func_name)
+		{
+			free(key_and_value[0]);
+			free(key_and_value[1]);
 			error(env);
+		}
 		free(key_and_value);
 		curr_var++;
 	}
@@ -113,9 +110,7 @@ static t_env_vars	*init_globals(t_env *env)
 int	main(void)
 {
 	t_env	env;
-#ifdef MALLOC_DEBUG
-	set_zone();
-#endif
+
 	env.env_vars = NULL;
 	env.error_func_name = NULL;
 	env.error_custom_msg = NULL;

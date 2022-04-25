@@ -9,6 +9,7 @@ char	*substring_dq(t_env *env)
 	char	*substr_dq;
 	char	*temp;
 	char	*key;
+	char	*joined;
 
 	if (match(DOUBLE_QUOTE, env))
 	{
@@ -53,16 +54,19 @@ char	*substring_dq(t_env *env)
 						return (NULL);
 					}
 				}
-				substr_dq = ft_strjoin(temp, substr_dq);
-				if (!substr_dq)
+				joined = ft_strjoin(temp, substr_dq);
+				if (!joined)
 				{
 					set_err_func_name(env, "malloc");
 					free(key);
 					free(temp);
+					free(substr_dq);
 					return (NULL);
 				}
 				free(temp);
 				free(key);
+				free(substr_dq);
+				substr_dq = joined;
 				advance(env, 0);
 			}
 			else
@@ -82,14 +86,17 @@ char	*substring_dq(t_env *env)
 				free(temp);
 				return (NULL);
 			}
-			substr_dq = ft_strjoin(temp, substr_dq);
-			if (!substr_dq)
+			joined = ft_strjoin(temp, substr_dq);
+			if (!joined)
 			{
 				set_err_func_name(env, "malloc");
 				free(temp);
+				free(substr_dq);
 				return (NULL);
 			}
 			free(temp);
+			free(substr_dq);
+			substr_dq = joined;
 			advance(env, 0);
 		}
 		if (match(NEWLINE, env) || match(EOI, env))
