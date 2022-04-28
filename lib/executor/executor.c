@@ -117,6 +117,11 @@ void	set_input_fd(t_cmd *cmd, t_env *env, int custom_in)
 	if (cmd->in_filename)
 	{
 		in_file = open(cmd->in_filename, O_RDONLY);
+		if (in_file == -1)
+		{
+			env->error_func_name = "open";
+			return ;
+		}
 		dup2(in_file, STDIN_FILENO);
 	}
 	else if (cmd->heredocs_top > -1)
@@ -130,7 +135,7 @@ void	set_input_fd(t_cmd *cmd, t_env *env, int custom_in)
 		dup2(custom_in, STDIN_FILENO);
 }
 
-void	set_output_fd(t_cmd *cmd, int custom_out)
+void	set_output_fd(t_cmd *cmd, t_env *env, int custom_out)
 {
 	int	out_file;
 
@@ -142,21 +147,99 @@ void	set_output_fd(t_cmd *cmd, int custom_out)
 		else
 			out_file = open(cmd->out_filename, O_CREAT | O_RDWR | O_TRUNC,
 					0644);
+		if (out_file == -1)
+		{
+			env->error_func_name = "open";
+			return ;
+		}
 		dup2(out_file, STDOUT_FILENO);
 	}
 	else
 		dup2(custom_out, STDOUT_FILENO);
 }
 
+static void	builtin(t_pipelist *curr_pipelist, t_env *env,
+					   t_params	*params)
+{
+	int		standard_backup[2];
+
+	standard_backup[0] = dup(STDIN_FILENO);
+	standard_backup[1] = dup(STDOUT_FILENO);
+	set_input_fd(curr_pipelist->u_item.cmd, env, params->first_in);
+	if (env->error_func_name)
+	{
+		close_descriptors(2, standard_backup[0], standard_backup[1]);
+		error(env);
+		env->error_func_name = NULL;
+	}
+	else
+	{
+		if (curr_pipelist->next != NULL)
+			set_output_fd(curr_pipelist->u_item.cmd, env, params->second_p[1]);
+		else
+			set_output_fd(curr_pipelist->u_item.cmd, env, params->global_out);
+		if (env->error_func_name)
+		{
+			error(env);
+			dup2(standard_backup[0], STDIN_FILENO);
+			close_descriptors(2, standard_backup[0], standard_backup[1]);
+		}
+		else
+		{
+			call_builtins(curr_pipelist->u_item.cmd, env, params->status);
+			dup2(standard_backup[0], STDIN_FILENO);
+			dup2(standard_backup[1], STDOUT_FILENO);
+			close_descriptors(2, standard_backup[0], standard_backup[1]);
+		}
+	}
+}
+
+static void	fork_process(t_pipelist *curr_pipelist, t_env *env,
+							t_params *params)
+{
+	if (curr_pipelist->type == NEXT_PIPELST)
+	{
+		set_input_fd(curr_pipelist->u_item.cmd, env, params->first_in);
+		if (env->error_func_name)
+		{
+			error(env);
+			exit(EXIT_FAILURE);
+		}
+		if (curr_pipelist->next != NULL)
+			set_output_fd(curr_pipelist->u_item.cmd, env,
+				params->second_p[1]);
+		else
+			set_output_fd(curr_pipelist->u_item.cmd, env,
+				params->global_out);
+		if (env->error_func_name)
+		{
+			error(env);
+			exit(EXIT_FAILURE);
+		}
+		find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
+	}
+	else if (curr_pipelist->type == NEXT_SCRIPT)
+	{
+		if (curr_pipelist->next != NULL)
+			executor(curr_pipelist->u_item.script, env, params->first_in,
+				params->second_p[1]);
+		else
+			executor(curr_pipelist->u_item.script, env, params->first_in,
+				params->global_out);
+	}
+	exit(EXIT_SUCCESS);
+}
+
 void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 			int global_in, int global_out)
 {
-	int		first_p[2];
-	int		second_p[2];
-	int		standard_backup[2];
-	int		status;
-	pid_t	curr_process;
+	int			first_p[2];
+	int			second_p[2];
+	int			status;
+	t_params	params;
+	pid_t		curr_process;
 
+	params.global_out = global_out;
 	if (curr_pipelist->type == NEXT_PIPELST
 		&& curr_pipelist->u_item.cmd->argv_top == -1)
 		return ;
@@ -168,42 +251,17 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 			return ;
 		}
 	}
+	params.second_p = second_p;
+	params.first_in = global_in;
 	if (curr_pipelist->type == NEXT_PIPELST && find_builtin(
 			curr_pipelist->u_item.cmd, &status))
 	{
-		standard_backup[0] = dup(STDIN_FILENO);
-		if (standard_backup[0] == -1)
-		{
-			if (curr_pipelist->next != NULL)
-				close_descriptors(2, second_p[0], second_p[1]);
-			env->error_func_name = "dup";
-			return ;
-		}
-		standard_backup[1] = dup(STDOUT_FILENO);
-		if (standard_backup[1] == -1)
-		{
-			close_descriptors(1, standard_backup[0]);
-			if (curr_pipelist->next != NULL)
-				close_descriptors(2, second_p[0], second_p[1]);
-			env->error_func_name = "dup";
-			return ;
-		}
-		set_input_fd(curr_pipelist->u_item.cmd, env, global_in);
-		if (curr_pipelist->next != NULL)
-			set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
-		else
-			set_output_fd(curr_pipelist->u_item.cmd, global_out);
-		call_builtins(curr_pipelist->u_item.cmd, env, status);
-		if (dup2(standard_backup[0], STDIN_FILENO) == -1
-			|| dup2(standard_backup[1], STDOUT_FILENO) == -1)
-		{
-			close_descriptors(2, standard_backup[0], standard_backup[1]);
-			env->error_func_name = "dup2";
-			return ;
-		}
-		close_descriptors(2, standard_backup[0], standard_backup[1]);
+		params.status = status;
+		builtin(curr_pipelist, env, &params);
 		if (curr_pipelist->next == NULL)
 			return ;
+		else
+			curr_pipelist = curr_pipelist->next;
 	}
 	else
 	{
@@ -212,25 +270,7 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 		{
 			if (curr_pipelist->next != NULL)
 				close_descriptors(1, second_p[0]);
-			if (curr_pipelist->type == NEXT_PIPELST)
-			{
-				set_input_fd(curr_pipelist->u_item.cmd, env, global_in);
-				if (curr_pipelist->next != NULL)
-					set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
-				else
-					set_output_fd(curr_pipelist->u_item.cmd, global_out);
-				find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
-			}
-			else if (curr_pipelist->type == NEXT_SCRIPT)
-			{
-				if (curr_pipelist->next != NULL)
-					executor(curr_pipelist->u_item.script, env, global_in,
-						second_p[1]);
-				else
-					executor(curr_pipelist->u_item.script, env, global_in,
-						global_out);
-			}
-			exit(EXIT_SUCCESS);
+			fork_process(curr_pipelist, env, &params);
 		}
 		if (curr_pipelist->next != NULL)
 			curr_pipelist = curr_pipelist->next;
@@ -249,17 +289,13 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 		close_descriptors(2, second_p[0], second_p[1]);
 		if (pipe(second_p) == -1)
 			env->error_func_name = "pipe";
+		params.first_in = first_p[0];
+		params.second_p = second_p;
 		if (curr_pipelist->type == NEXT_PIPELST && find_builtin(
 				curr_pipelist->u_item.cmd, &status))
 		{
-			standard_backup[0] = dup(STDIN_FILENO);
-			standard_backup[1] = dup(STDOUT_FILENO);
-			set_input_fd(curr_pipelist->u_item.cmd, env, first_p[0]);
-			set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
-			call_builtins(curr_pipelist->u_item.cmd, env, status);
-			dup2(standard_backup[0], STDIN_FILENO);
-			dup2(standard_backup[1], STDOUT_FILENO);
-			close_descriptors(2, standard_backup[0], standard_backup[1]);
+			params.status = status;
+			builtin(curr_pipelist, env, &params);
 		}
 		else
 		{
@@ -267,32 +303,19 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 			if (!curr_process)
 			{
 				close_descriptors(2, first_p[1], second_p[0]);
-				if (curr_pipelist->type == NEXT_PIPELST)
-				{
-					set_input_fd(curr_pipelist->u_item.cmd, env, first_p[0]);
-					set_output_fd(curr_pipelist->u_item.cmd, second_p[1]);
-					find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
-				}
-				else if (curr_pipelist->type == NEXT_SCRIPT)
-					executor(curr_pipelist->u_item.script, env, first_p[0],
-						second_p[1]);
-				exit(EXIT_SUCCESS);
+				fork_process(curr_pipelist, env, &params);
 			}
 		}
 		close_descriptors(2, first_p[0], first_p[1]);
 		curr_pipelist = curr_pipelist->next;
 	}
+	params.first_in = second_p[0];
+	params.second_p = second_p;
 	if (curr_pipelist->type == NEXT_PIPELST && find_builtin(
 			curr_pipelist->u_item.cmd, &status))
 	{
-		standard_backup[0] = dup(STDIN_FILENO);
-		standard_backup[1] = dup(STDOUT_FILENO);
-		set_input_fd(curr_pipelist->u_item.cmd, env, second_p[0]);
-		set_output_fd(curr_pipelist->u_item.cmd, global_out);
-		call_builtins(curr_pipelist->u_item.cmd, env, status);
-		dup2(standard_backup[0], STDIN_FILENO);
-		dup2(standard_backup[1], STDOUT_FILENO);
-		close_descriptors(2, standard_backup[0], standard_backup[1]);
+		params.status = status;
+		builtin(curr_pipelist, env, &params);
 	}
 	else
 	{
@@ -300,16 +323,7 @@ void	iter_pipelist(t_pipelist *curr_pipelist, t_env *env,
 		if (!curr_process)
 		{
 			close_descriptors(1, second_p[1]);
-			if (curr_pipelist->type == NEXT_PIPELST)
-			{
-				set_input_fd(curr_pipelist->u_item.cmd, env, second_p[0]);
-				set_output_fd(curr_pipelist->u_item.cmd, global_out);
-				find_and_exec_cmd(curr_pipelist->u_item.cmd, env);
-			}
-			else if (curr_pipelist->type == NEXT_SCRIPT)
-				executor(curr_pipelist->u_item.script, env,
-					second_p[0], global_out);
-			exit(EXIT_SUCCESS);
+			fork_process(curr_pipelist, env, &params);
 		}
 	}
 	close_descriptors(2, second_p[1], second_p[0]);
@@ -331,6 +345,12 @@ void	iter_cmd_table(t_cmd_table *curr_cmd_table, t_env *env,
 		{
 			iter_pipelist(curr_cmd_table->pipelist, env,
 				global_in, global_out);
+			if (env->error_func_name)
+			{
+				error(env);
+				env->exit_code = EXIT_FAILURE;
+				env->error_func_name = NULL;
+			}
 			curr_cmd_table = curr_cmd_table->next;
 		}
 	}
