@@ -1,4 +1,4 @@
-AM_CFLAGS = -Wall -Wextra -fsanitize=address
+AM_CFLAGS = -Wall -Wextra -Werror -fsanitize=address
 
 bin_PROGRAMS = minishell
 minishell_SOURCES = sigs.c sigs.h main.c lib/lexer/lex.c lib/lexer/no_quotes.c \
@@ -6,7 +6,9 @@ minishell_SOURCES = sigs.c sigs.h main.c lib/lexer/lex.c lib/lexer/no_quotes.c \
 				lib/error/error.c lib/env_vars/env_vars.c lib/parser/command.c \
 				lib/parser/expression.c lib/parser/item.c lib/parser/statements.c \
 				lib/parser/substring.c lib/parser/substring_dq.c lib/parser/word.c \
-				lib/executor/read_heredoc.c lib/builtins/builtins.c lib/builtins/check_builtins.c
+				lib/executor/read_heredoc.c lib/builtins/builtins.c lib/builtins/check_builtins.c \
+				lib/executor/exec_pipelist_item.c lib/executor/find_and_exec_cmd.c \
+				lib/executor/fork_and_builtin.c lib/executor/helpers.c lib/executor/iter_pipelist.c
 
 minishell_LDADD = -lreadline lib/libft/libft.a
 

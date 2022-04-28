@@ -21,12 +21,12 @@ void	error(t_env *env)
 	if (env->error_func_name)
 	{
 		perror(env->error_func_name);
-		env->error_func_name = NULL;
+		set_err_func_name(env, NULL);
 	}
 	else if (env->error_custom_msg)
 	{
 		ft_putendl_fd(env->error_custom_msg, STDERR_FILENO);
-		env->error_custom_msg = NULL;
+		set_err_custom_msg(env, NULL);
 	}
 }
 

@@ -14,8 +14,27 @@
 #include <readline/readline.h>
 #include "../../include/libft.h"
 #include "../../include/parse_tree.h"
+#include "../../include/env_state.h"
+#include "executor_private.h"
 
-void	read_heredoc(t_cmd *cmd, int write_pipe)
+static int	write_to_pipe(int write_pipe, t_env *env, char *curr_line)
+{
+	if (write(write_pipe, curr_line, ft_strlen(curr_line)) == -1)
+	{
+		free(curr_line);
+		report_func_error(env, "write");
+		return (0);
+	}
+	if (write(write_pipe, "\n", 1) == -1)
+	{
+		free(curr_line);
+		report_func_error(env, "write");
+		return (0);
+	}
+	return (1);
+}
+
+void	read_heredoc(t_cmd *cmd, t_env *env, int write_pipe)
 {
 	char	*curr_line;
 	int		curr_idx;
@@ -25,18 +44,16 @@ void	read_heredoc(t_cmd *cmd, int write_pipe)
 	while (curr_line != NULL)
 	{
 		if (ft_strncmp(curr_line, cmd->delimeters[curr_idx],
-				ft_strlen(curr_line)) == 0)
+				ft_strlen(curr_line)) == 0
+			&& ft_strlen(curr_line) == ft_strlen(cmd->delimeters[curr_idx]))
 			curr_idx++;
 		else
-		{
-			write(write_pipe, curr_line, ft_strlen(curr_line));
-			write(write_pipe, "\n", 1);
-		}
+			if (!write_to_pipe(write_pipe, env, curr_line))
+				return ;
 		free(curr_line);
 		if (curr_idx > cmd->heredocs_top)
 			break ;
 		curr_line = readline("> ");
 	}
 	close(write_pipe);
-	//exit(EXIT_SUCCESS);
 }
