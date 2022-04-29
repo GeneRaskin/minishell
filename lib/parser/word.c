@@ -112,8 +112,7 @@ void	word(t_env *env, t_curr_items_ptrs *ptrs)
 	word_main_loop(env, &word);
 	if (env->state & IN_FILE_TK)
 		curr_cmd->in_filename = word;
-	else if ((env->state & OUT_FILE_TK || curr_cmd->append_mode)
-		&& !curr_cmd->out_filename)
+	else if (env->state & OUT_FILE_TK || curr_cmd->append_mode)
 		curr_cmd->out_filename = word;
 	else if (env->state & HEREDOC_TK)
 		curr_cmd->delimeters[++curr_cmd->heredocs_top] = word;

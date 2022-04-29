@@ -143,20 +143,25 @@ void	find_and_exec_cmd(t_cmd *cmd, t_env *env)
 	paths = iter_paths(cmd, env, &i, path_with_slash);
 	if (paths[i] == NULL)
 	{
-		path_with_slash[0] = ft_strjoin(getcwd(curr_path, MAXPATHLEN), "/");
-		if (path_with_slash[0] == NULL)
+		if (cmd->argv[0][0] != '/')
 		{
-			report_func_error(env, "malloc");
-			terminate(paths, env);
-		}
-		path_with_slash[1] = ft_strjoin(path_with_slash[0], cmd->argv[0]);
-		if (path_with_slash[1] == NULL)
-		{
+			path_with_slash[0] = ft_strjoin(getcwd(curr_path, MAXPATHLEN), "/");
+			if (path_with_slash[0] == NULL)
+			{
+				report_func_error(env, "malloc");
+				terminate(paths, env);
+			}
+			path_with_slash[1] = ft_strjoin(path_with_slash[0], cmd->argv[0]);
+			if (path_with_slash[1] == NULL)
+			{
+				free(path_with_slash[0]);
+				report_func_error(env, "malloc");
+				terminate(NULL, env);
+			}
 			free(path_with_slash[0]);
-			report_func_error(env, "malloc");
-			terminate(NULL, env);
 		}
-		free(path_with_slash[0]);
+		else
+			path_with_slash[1] = cmd->argv[0];
 		if (access(path_with_slash[1], F_OK) == 0)
 		{
 			envp = construct_envp(env);
@@ -172,7 +177,8 @@ void	find_and_exec_cmd(t_cmd *cmd, t_env *env)
 				terminate(paths, env);
 			}
 		}
-		free(path_with_slash[1]);
+		if (cmd->argv[0][0] != '/')
+			free(path_with_slash[1]);
 		set_err_custom_msg(env, BIN_NOT_FOUND_ERR);
 		error(env);
 	}

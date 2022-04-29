@@ -10,7 +10,9 @@ char	*substring_dq(t_env *env)
 	char	*temp;
 	char	*key;
 	char	*joined;
+	int		has_key;
 
+	has_key = 1;
 	if (match(DOUBLE_QUOTE, env))
 	{
 		substr_dq = ft_substr(env->yytext, 0, 0);
@@ -46,6 +48,7 @@ char	*substring_dq(t_env *env)
 				if (!substr_dq)
 				{
 					substr_dq = ft_strdup("");
+					has_key = 0;
 					if (!substr_dq)
 					{
 						free(temp);
@@ -60,12 +63,14 @@ char	*substring_dq(t_env *env)
 					set_err_func_name(env, "malloc");
 					free(key);
 					free(temp);
-					free(substr_dq);
+					if (!has_key)
+						free(substr_dq);
 					return (NULL);
 				}
 				free(temp);
 				free(key);
-				free(substr_dq);
+				if (!has_key)
+					free(substr_dq);
 				substr_dq = joined;
 				advance(env, 0);
 			}
