@@ -21,6 +21,8 @@
 # define VAR			18
 # define SPACE			19
 # define NEWLINE		20
+# define QUESTION_MARK	21
+# define PLUS_SIGN		22
 
 # define SINGLE_Q		0x1
 # define DOUBLE_Q		0x2
@@ -29,6 +31,6 @@
 # define IN_FILE_TK		0x10
 # define OUT_FILE_TK	0x20
 # define PARSE_VAR		0x40
-# define UNQUOT_DOLLAR	0x80
+# define APPEND_TO_VAR	0x80
 
 #endif

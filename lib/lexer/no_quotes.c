@@ -8,12 +8,12 @@ int	dollar(char **current, t_env *env);
 static int	loop_no_quotes(char **current, t_env *env)
 {
 	while (**current && !ft_isspace(**current)
-		   && **current != '>' && **current != '<'
-		   && **current != '|' && **current != '\''
-		   && **current != '"' && **current != '&'
-		   && **current != '$' && **current != ';'
-		   && **current != ')' && **current != '('
-		   && **current != '\n')
+		&& **current != '>' && **current != '<'
+		&& **current != '|' && **current != '\''
+		&& **current != '"' && **current != '&'
+		&& **current != '$' && **current != ';'
+		&& **current != ')' && **current != '('
+		&& **current != '\n')
 		++(*current);
 	if (**current == '&' && *(*current + 1) != '&')
 	{
@@ -102,6 +102,9 @@ int	no_quotes(char **current, t_env *env)
 	}
 	else if (**current == '=' && env->state & PARSE_VAR)
 		return (EQUAL_SIGN);
+	else if (**current == '+' && (env->state & PARSE_VAR
+			&& env->state & APPEND_TO_VAR))
+		return (PLUS_SIGN);
 	else if (env->state & DOLLAR)
 		return (dollar(current, env));
 	else

@@ -14,13 +14,14 @@
 #include "sigs.h"
 #define SHELL_NAME "gene_shell$ "
 
+void	expand_dollar(t_env *env);
+
 void	init_env(t_env *env)
 {
 	env->lookahead = -1;
 	env->yytext = "";
 	env->yyleng = 0;
 	env->state = 0;
-	env->exit_code = EXIT_SUCCESS;
 	env->opened_parens = 0;
 	env->error_func_name = NULL;
 	env->error_custom_msg = NULL;
@@ -70,6 +71,7 @@ static void	loop(t_env *env)
 		curr_line = env->yytext;
 		while (ft_isspace(*(env->yytext)))
 			env->yytext++;
+		expand_dollar(env);
 		env->parse_tree = statements(env);
 		free(curr_line);
 		execute(env);
@@ -114,6 +116,7 @@ int	main(void)
 	env.env_vars = NULL;
 	env.error_func_name = NULL;
 	env.error_custom_msg = NULL;
+	env.exit_code = EXIT_SUCCESS;
 	if (signal(SIGINT, catch_sigint) == SIG_ERR
 		|| signal(SIGTSTP, SIG_IGN) == SIG_ERR
 		|| signal(SIGQUIT, SIG_IGN) == SIG_ERR)

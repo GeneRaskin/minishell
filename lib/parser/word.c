@@ -2,8 +2,9 @@
 #include "../../include/libft.h"
 #include "../../include/env_vars.h"
 
-char	*substring(t_env *env);
-void	word(t_env *env, t_curr_items_ptrs *ptrs);
+char		*substring(t_env *env);
+void		word(t_env *env, t_curr_items_ptrs *ptrs);
+static void	word_main_loop(t_env *env, char **word_ptr);
 
 static int	verify_var_name(t_env *env)
 {
@@ -19,6 +20,12 @@ static int	verify_var_name(t_env *env)
 		var++;
 		len++;
 	}
+	if (*var == '+' && *(var + 1) == '=')
+	{
+		env->yyleng = len;
+		env->state |= APPEND_TO_VAR;
+		return (1);
+	}
 	if (*var == '=')
 	{
 		env->yyleng = len;
@@ -27,22 +34,58 @@ static int	verify_var_name(t_env *env)
 	return (0);
 }
 
-static void	init_env_var(t_env *env) {
-	char *key;
-	char *word;
+static void	init_env_var(t_env *env)
+{
+	char	*key;
+	char	*word;
+	char	*temp;
+	int		in_global_vars;
 
 	key = ft_substr(env->yytext, 0, env->yyleng);
-	if (!key) {
+	in_global_vars = 0;
+	if (!key)
+	{
 		env->error_func_name = "malloc";
-		return;
+		return ;
 	}
 	env->state |= PARSE_VAR;
 	advance(env, 1);
+	if (match(PLUS_SIGN, env))
+		advance(env, 1);
 	advance(env, 1);
-	word = substring(env);
+	word_main_loop(env, &word);
 	if (env->error_custom_msg || env->error_func_name)
-		return;
-	if (!get(key, env->global_env_vars))
+		return ;
+	if (get(key, env->global_env_vars))
+		in_global_vars = 1;
+	if (env->state & APPEND_TO_VAR)
+	{
+		env->state &= ~APPEND_TO_VAR;
+		temp = word;
+		if (!in_global_vars)
+		{
+			word = get(key, env->env_vars);
+			if (word)
+			{
+				word = ft_strjoin(word, temp);
+				free(temp);
+			}
+			else
+				word = temp;
+		}
+		else
+		{
+			word = get(key, env->global_env_vars);
+			if (word)
+			{
+				word = ft_strjoin(word, temp);
+				free(temp);
+			}
+			else
+				word = temp;
+		}
+	}
+	if (!in_global_vars)
 		set(key, word, &(env->env_vars), env);
 	else
 		set(key, word, &(env->global_env_vars), env);
@@ -51,8 +94,8 @@ static void	init_env_var(t_env *env) {
 
 static void	word_main_loop(t_env *env, char **word_ptr)
 {
-	char		*temp;
-	char		*joined;
+	char	*temp;
+	char	*joined;
 
 	*word_ptr = substring(env);
 	if (env->error_custom_msg || env->error_func_name)

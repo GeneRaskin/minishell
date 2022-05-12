@@ -47,7 +47,6 @@ char	*substring_dq(t_env *env)
 					substr_dq = get(key, env->global_env_vars);
 				if (!substr_dq)
 				{
-					has_key = 0;
 					substr_dq = ft_strdup("");
 					has_key = 0;
 					if (!substr_dq)
@@ -74,6 +73,15 @@ char	*substring_dq(t_env *env)
 					free(substr_dq);
 				substr_dq = joined;
 				advance(env, 0);
+			}
+			else if (match(QUESTION_MARK, env))
+			{
+				advance(env, 0);
+				temp = ft_itoa(env->exit_code);
+				joined = ft_strjoin(substr_dq, temp);
+				free(substr_dq);
+				free(temp);
+				substr_dq = joined;
 			}
 			else
 			{

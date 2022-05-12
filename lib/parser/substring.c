@@ -43,7 +43,7 @@ static char	*single_q(t_env *env)
 	return (substr);
 }
 
-static char	*dollar(t_env *env)
+char	*dollar_expansion(t_env *env)
 {
 	char	*substr;
 	char	*key;
@@ -99,6 +99,11 @@ static char	*dollar(t_env *env)
 		free(key);
 		return (substr);
 	}
+	else if (match(QUESTION_MARK, env))
+	{
+		advance(env, 0);
+		return (ft_itoa(env->exit_code));
+	}
 	else
 	{
 		env->error_custom_msg = SYNTAX_ERR;
@@ -136,10 +141,7 @@ char	*substring(t_env *env)
 	else if (match(SINGLE_QUOTE, env))
 		return (single_q(env));
 	else if (match(DOLLAR_SIGN, env))
-	{
-		env->state |= UNQUOT_DOLLAR;
-		return (dollar(env));
-	}
+		return (dollar_expansion(env));
 	else
 		return (call_substring_dq(env));
 }

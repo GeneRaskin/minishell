@@ -7,7 +7,7 @@ int	no_quotes(char **current, t_env *env);
 static int	single_q(char **current, t_env *env)
 {
 	while (**current && **current != '\''
-		   && **current != '\n')
+		&& **current != '\n')
 		++(*current);
 	env->yyleng = *current - env->yytext;
 	if (**current == '\n')
@@ -27,6 +27,11 @@ static int	single_q(char **current, t_env *env)
 int	dollar(char **current, t_env *env)
 {
 	env->state &= ~DOLLAR;
+	if (**current == '?')
+	{
+		env->yyleng = 1;
+		return (QUESTION_MARK);
+	}
 	if (!ft_isalpha(**current))
 		return (NULL_TOKEN);
 	while (**current && ft_isalnum(**current))
@@ -47,7 +52,7 @@ static int	double_quotes(char **current, t_env *env)
 	if (env->state & DOLLAR)
 		return (dollar(current, env));
 	while (**current && **current != '"' && **current != '$'
-		   && **current != '\n')
+		&& **current != '\n')
 		++(*current);
 	env->yyleng = *current - env->yytext;
 	if (**current == '\n')
