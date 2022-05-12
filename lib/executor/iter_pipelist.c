@@ -4,12 +4,13 @@
 #include "executor_private.h"
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 
 int	catch_and_wait(t_env *env, int *status)
 {
 	while (wait(status) > 0)
 		;
-	env->exit_code = WEXITSTATUS(status);
+	env->exit_code = WEXITSTATUS(*status);
 	return (0);
 }
 
