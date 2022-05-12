@@ -21,10 +21,10 @@ static t_cmd	*init_cmd(t_env *env)
 		i++;
 	}
 	new_cmd->argv_top = -1;
-	new_cmd->out_filename = NULL;
-	new_cmd->in_filename = NULL;
-	new_cmd->append_mode = 0;
+	new_cmd->out_filenames_top = -1;
+	new_cmd->in_filenames_top = -1;
 	new_cmd->heredocs_top = -1;
+	new_cmd->last_input = 0;
 	return (new_cmd);
 }
 

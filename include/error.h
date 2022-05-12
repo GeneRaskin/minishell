@@ -9,6 +9,10 @@
 # define PWD_ARGC_ERROR "pwd: too many arguments"
 # define ENV_ARGC_ERROR "env: too many arguments"
 # define UNSET_ARGC_ERROR "unset: not enough arguments"
+# define ARGV_OVERFLOW_ERROR "gene_shell: too many arguments in command"
+# define INFILENAMES_OVERFLOW_ERROR "gene_shell: too many inputs in command"
+# define OUTFILENAMES_OVERFLOW_ERROR "gene_shell: too many outputs in command"
+# define HEREDOCS_OVERFLOW_ERROR "gene_shell: too many delimeters in command"
 
 struct	s_env;
 

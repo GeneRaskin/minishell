@@ -47,6 +47,7 @@ char	*substring_dq(t_env *env)
 					substr_dq = get(key, env->global_env_vars);
 				if (!substr_dq)
 				{
+					has_key = 0;
 					substr_dq = ft_strdup("");
 					has_key = 0;
 					if (!substr_dq)

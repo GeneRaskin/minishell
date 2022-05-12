@@ -1,22 +1,25 @@
 #ifndef PARSE_TREE_H
 # define PARSE_TREE_H
 
-# define MAX_ARGV 1000
+# define MAX_ARGV 100
 # define MAX_HEREDOCS 100
+# define MAX_INFILENAMES 100
+# define MAX_OUTFILENAMES 100
 # define NEXT_PIPELST 0x1
 # define NEXT_SCRIPT 0x2
-# define TAIL 0x1
-# define HEAD 0x2
 
 typedef struct s_cmd
 {
-	char		*argv[MAX_ARGV];
-	int			argv_top;
-	int			heredocs_top;
-	char		*in_filename;
-	char		*out_filename;
-	char		*delimeters[MAX_HEREDOCS];
-	int			append_mode;
+	char	*argv[MAX_ARGV];
+	int		argv_top;
+	int		heredocs_top;
+	int		in_filenames_top;
+	int		out_filenames_top;
+	char	*in_filename[MAX_INFILENAMES];
+	char	*out_filename[MAX_OUTFILENAMES];
+	char	*delimeters[MAX_HEREDOCS];
+	int		append_mode[MAX_OUTFILENAMES];
+	int		last_input;
 }	t_cmd;
 
 typedef struct s_pipelist
@@ -27,7 +30,6 @@ typedef struct s_pipelist
 	}	u_item;
 	int					type;
 	struct s_pipelist	*next;
-	int					pos;
 }	t_pipelist;
 
 typedef struct s_cmd_table

@@ -18,20 +18,16 @@ static void	free_cmd(t_cmd *cmd)
 
 	i = 0;
 	while (i <= cmd->argv_top)
-	{
-		free(cmd->argv[i]);
-		i++;
-	}
+		free(cmd->argv[i++]);
 	i = 0;
 	while (i <= cmd->heredocs_top)
-	{
-		free(cmd->delimeters[i]);
-		i++;
-	}
-	if (cmd->out_filename)
-		free(cmd->out_filename);
-	if (cmd->in_filename)
-		free(cmd->in_filename);
+		free(cmd->delimeters[i++]);
+	i = 0;
+	while (i <= cmd->out_filenames_top)
+		free(cmd->out_filename[i++]);
+	i = 0;
+	while (i <= cmd->in_filenames_top)
+		free(cmd->in_filename[i++]);
 	free(cmd);
 }
 

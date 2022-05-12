@@ -136,7 +136,10 @@ char	*substring(t_env *env)
 	else if (match(SINGLE_QUOTE, env))
 		return (single_q(env));
 	else if (match(DOLLAR_SIGN, env))
+	{
+		env->state |= UNQUOT_DOLLAR;
 		return (dollar(env));
+	}
 	else
 		return (call_substring_dq(env));
 }

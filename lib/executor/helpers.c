@@ -8,23 +8,32 @@
 int	set_input_fd(t_cmd *cmd, t_env *env, int custom_in)
 {
 	int		in_file;
+	int		i;
 	int		heredoc_pipe[2];
 
-	if (cmd->in_filename)
-	{
-		in_file = open(cmd->in_filename, O_RDONLY);
-		if (in_file == -1)
-			return (report_func_error(env, "open"));
-		dup2(in_file, STDIN_FILENO);
-	}
-	else if (cmd->heredocs_top > -1)
+	i = 0;
+	if (cmd->heredocs_top != -1)
 	{
 		if (pipe(heredoc_pipe) == -1)
 			return (report_func_error(env, "pipe"));
 		read_heredoc(cmd, env, heredoc_pipe[1]);
-		dup2(heredoc_pipe[0], STDIN_FILENO);
+		if (cmd->last_input == 2)
+			dup2(heredoc_pipe[0], STDIN_FILENO);
+		else
+			close_descriptors(2, heredoc_pipe[0], heredoc_pipe[1]);
 	}
-	else
+	while (i <= cmd->in_filenames_top)
+	{
+		in_file = open(cmd->in_filename[i], O_RDONLY);
+		if (in_file == -1)
+			return (report_func_error(env, "open"));
+		if (cmd->last_input == 1 && i == cmd->in_filenames_top)
+			dup2(in_file, STDIN_FILENO);
+		else
+			close_descriptors(1, in_file);
+		i++;
+	}
+	if (cmd->last_input == 0)
 		dup2(custom_in, STDIN_FILENO);
 	return (1);
 }
@@ -32,20 +41,24 @@ int	set_input_fd(t_cmd *cmd, t_env *env, int custom_in)
 int	set_output_fd(t_cmd *cmd, t_env *env, int custom_out)
 {
 	int	out_file;
+	int	i;
 
-	if (cmd->out_filename)
+	i = 0;
+	while (i <= cmd->out_filenames_top)
 	{
-		if (cmd->append_mode)
-			out_file = open(cmd->out_filename,
+		if (cmd->append_mode[i])
+			out_file = open(cmd->out_filename[i],
 					O_CREAT | O_RDWR | O_APPEND, 0644);
 		else
-			out_file = open(cmd->out_filename, O_CREAT | O_RDWR | O_TRUNC,
+			out_file = open(cmd->out_filename[i], O_CREAT | O_RDWR | O_TRUNC,
 					0644);
 		if (out_file == -1)
 			return (report_func_error(env, "open"));
-		dup2(out_file, STDOUT_FILENO);
+		if (i == cmd->out_filenames_top)
+			dup2(out_file, STDOUT_FILENO);
+		i++;
 	}
-	else
+	if (cmd->out_filenames_top == -1)
 		dup2(custom_out, STDOUT_FILENO);
 	return (1);
 }

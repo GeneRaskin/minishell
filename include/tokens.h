@@ -29,5 +29,6 @@
 # define IN_FILE_TK		0x10
 # define OUT_FILE_TK	0x20
 # define PARSE_VAR		0x40
+# define UNQUOT_DOLLAR	0x80
 
 #endif
