@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: lemmon <lemmon@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2022/05/13 20:32:17 by lemmon            #+#    #+#             */
+/*   Updated: 2022/05/13 21:10:48 by lemmon           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "include/error.h"
 #include "include/libft.h"
 #include "include/free.h"
@@ -17,6 +29,7 @@
 t_env	*g_env;
 
 void	expand_dollar(t_env *env);
+void	loop(t_env *env);
 
 void	init_env(t_env *env)
 {
@@ -48,44 +61,11 @@ void	execute(t_env *env)
 	}
 }
 
-static void	loop(t_env *env)
+static	void	free_key_and_value(char **key_and_value, t_env *env)
 {
-	char			*curr_line;
-
-	while (1)
-	{
-		init_env(env);
-		if (env->yytext && *(env->yytext))
-			add_history(env->yytext);
-		if (!env->yytext)
-		{
-			ft_putstr_fd("\n", STDOUT_FILENO);
-			free_env_vars(env->env_vars);
-			free_env_vars(env->global_env_vars);
-			clear_history();
-			exit(EXIT_SUCCESS);
-		}
-		else if (!*(env->yytext))
-			continue ;
-		if (env->error_func_name)
-		{
-			error(env);
-			continue ;
-		}
-		curr_line = env->yytext;
-		while (ft_isspace(*(env->yytext)))
-			env->yytext++;
-		expand_dollar(env);
-		if (env->error_custom_msg || env->error_func_name)
-		{
-			error(env);
-			free(curr_line);
-			continue ;
-		}
-		env->parse_tree = statements(env);
-		free(curr_line);
-		execute(env);
-	}
+	free(key_and_value[0]);
+	free(key_and_value[1]);
+	error(env);
 }
 
 static t_env_vars	*init_globals(t_env *env)
@@ -108,11 +88,7 @@ static t_env_vars	*init_globals(t_env *env)
 		}
 		set(key_and_value[0], key_and_value[1], &(global_env_vars), env);
 		if (env->error_func_name)
-		{
-			free(key_and_value[0]);
-			free(key_and_value[1]);
-			error(env);
-		}
+			free_key_and_value(key_and_value, env);
 		free(key_and_value);
 		curr_var++;
 	}

@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   expand_dollar.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: lemmon <lemmon@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2022/05/13 20:32:32 by lemmon            #+#    #+#             */
+/*   Updated: 2022/05/13 22:05:27 by lemmon           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "include/env_state.h"
 #include "include/libft.h"
 #include "include/parser.h"
@@ -42,26 +54,30 @@ static void	expansion_loop(t_env *env, char **expanded_str)
 	env->yytext += curr_len;
 }
 
+static void	temp_check(t_env *env, char *temp, char *temp2, char *expanded_str)
+{
+	advance(env, 0);
+	temp = dollar_expansion(env);
+	temp2 = expanded_str;
+	expanded_str = ft_strjoin(expanded_str, temp);
+	free(temp);
+	free(temp2);
+}
+
 void	expand_dollar(t_env *env)
 {
 	char	*expanded_str;
 	char	*temp;
 	char	*temp2;
 
+	temp2 = NULL;
 	expanded_str = ft_strdup("");
 	while (*(env->yytext))
 	{
 		expansion_loop(env, &expanded_str);
 		if (*env->yytext == '$' && !(env->state & SINGLE_Q)
 			&& !(env->state & HEREDOC_TK))
-		{
-			advance(env, 0);
-			temp = dollar_expansion(env);
-			temp2 = expanded_str;
-			expanded_str = ft_strjoin(expanded_str, temp);
-			free(temp);
-			free(temp2);
-		}
+			temp_check(env, temp, temp2, expanded_str);
 		if (env->state & HEREDOC_TK && *env->yytext == '$')
 		{
 			temp = expanded_str;
