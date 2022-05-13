@@ -34,5 +34,6 @@
 # define APPEND_TO_VAR	0x80
 # define BUILTIN		0x100
 # define NO_COMMAND		0x200
+# define CRASH_BUILTIN	0x400
 
 #endif

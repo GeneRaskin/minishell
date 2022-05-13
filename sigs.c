@@ -10,7 +10,11 @@ extern t_env	*g_env;
 void	catch_sigint(int signum)
 {
 	(void) signum;
-	if (g_env->state & 0x200)
+	if (g_env->state & 0x100)
+	{
+		g_env->state |= 0x400;
+	}
+	else if (g_env->state & 0x200)
 	{
 		rl_on_new_line();
 		rl_redisplay();
@@ -21,5 +25,4 @@ void	catch_sigint(int signum)
 	}
 	else
 		ft_putstr_fd("\n", STDOUT_FILENO);
-	signal(SIGINT, catch_sigint);
 }

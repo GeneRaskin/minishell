@@ -76,6 +76,12 @@ static void	loop(t_env *env)
 		while (ft_isspace(*(env->yytext)))
 			env->yytext++;
 		expand_dollar(env);
+		if (env->error_custom_msg || env->error_func_name)
+		{
+			error(env);
+			free(curr_line);
+			continue ;
+		}
 		env->parse_tree = statements(env);
 		free(curr_line);
 		execute(env);

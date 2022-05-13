@@ -6,7 +6,7 @@
 /*   By:  <evraskin@edu.hse.ru>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/29 00:19:17 by                   #+#    #+#             */
-/*   Updated: 2022/05/13 19:52:39 by                  ###   ########.fr       */
+/*   Updated: 2022/05/13 21:05:25 by                  ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,8 +39,7 @@ static int	write_to_pipe(int write_pipe, t_env *env, char *curr_line)
 void	sigint_heredoc(int signum)
 {
 	(void) signum;
-	if (!(g_env->state & 0x100))
-		exit(EXIT_FAILURE);
+	exit(EXIT_FAILURE);
 }
 
 void	read_heredoc(t_cmd *cmd, t_env *env, int write_pipe)
@@ -48,10 +47,11 @@ void	read_heredoc(t_cmd *cmd, t_env *env, int write_pipe)
 	char	*curr_line;
 	int		curr_idx;
 
-	signal(SIGINT, sigint_heredoc);
+	if (!(g_env->state & 0x100))
+		signal(SIGINT, sigint_heredoc);
 	curr_line = readline("> ");
 	curr_idx = 0;
-	while (curr_line != NULL)
+	while (curr_line != NULL && !(env->state & 0x400))
 	{
 		if (ft_strncmp(curr_line, cmd->delimeters[curr_idx],
 				ft_strlen(curr_line)) == 0

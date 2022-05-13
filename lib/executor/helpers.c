@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "executor_private.h"
+#include <stdlib.h>
 
 int	set_input_fd(t_cmd *cmd, t_env *env, int custom_in)
 {
@@ -17,6 +18,8 @@ int	set_input_fd(t_cmd *cmd, t_env *env, int custom_in)
 		if (pipe(heredoc_pipe) == -1)
 			return (report_func_error(env, "pipe"));
 		read_heredoc(cmd, env, heredoc_pipe[1]);
+		if (env->state & 0x400)
+			return (0);
 		if (cmd->last_input == 2)
 			dup2(heredoc_pipe[0], STDIN_FILENO);
 		else
