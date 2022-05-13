@@ -5,6 +5,7 @@
 #include "../../include/env_state.h"
 #include <stdlib.h>
 #include "../../include/executor.h"
+#include "../../include/tokens.h"
 
 static int	dup_stdio(t_env *env, int *standard_backup)
 {

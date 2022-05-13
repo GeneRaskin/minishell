@@ -32,5 +32,7 @@
 # define OUT_FILE_TK	0x20
 # define PARSE_VAR		0x40
 # define APPEND_TO_VAR	0x80
+# define BUILTIN		0x100
+# define NO_COMMAND		0x200
 
 #endif

@@ -3,12 +3,15 @@
 #include <unistd.h>
 #include "../../include/env_state.h"
 #include "../../include/builtins.h"
+#include "../../include/tokens.h"
 
 static int	builtin_first_block(t_pipelist **curr_pipelist, t_env *env,
 									t_params *params, int status)
 {
 	params->status = status;
+	env->state |= BUILTIN;
 	builtin(*curr_pipelist, env, params);
+	env->state &= ~BUILTIN;
 	if ((*curr_pipelist)->next == NULL)
 		return (0);
 	else
@@ -68,7 +71,9 @@ void	loop_pipelist(t_pipelist **curr_pipelist, t_env *env,
 			(*curr_pipelist)->u_item.cmd, &status))
 	{
 		params->status = status;
+		env->state |= BUILTIN;
 		builtin((*curr_pipelist), env, params);
+		env->state &= ~BUILTIN;
 	}
 	else
 	{
@@ -96,7 +101,9 @@ void	last_block_pipelist(t_pipelist *curr_pipelist, t_env *env,
 			curr_pipelist->u_item.cmd, &status))
 	{
 		params->status = status;
+		env->state |= BUILTIN;
 		builtin(curr_pipelist, env, params);
+		env->state &= ~BUILTIN;
 	}
 	else
 	{

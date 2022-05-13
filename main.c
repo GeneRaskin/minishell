@@ -14,6 +14,8 @@
 #include "sigs.h"
 #define SHELL_NAME "gene_shell$ "
 
+t_env	*g_env;
+
 void	expand_dollar(t_env *env);
 
 void	init_env(t_env *env)
@@ -22,6 +24,7 @@ void	init_env(t_env *env)
 	env->yytext = "";
 	env->yyleng = 0;
 	env->state = 0;
+	env->state |= 0x200;
 	env->opened_parens = 0;
 	env->error_func_name = NULL;
 	env->error_custom_msg = NULL;
@@ -39,6 +42,7 @@ void	execute(t_env *env)
 	}
 	else if (env->parse_tree)
 	{
+		env->state &= ~0x200;
 		executor(env->parse_tree, env, STDIN_FILENO, STDOUT_FILENO);
 		free_parse_tree(env->parse_tree);
 	}
@@ -125,5 +129,7 @@ int	main(void)
 		error(&env);
 	}
 	env.global_env_vars = init_globals(&env);
+	env.state |= 0x200;
+	g_env = &env;
 	loop(&env);
 }

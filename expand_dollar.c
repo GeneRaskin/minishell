@@ -8,6 +8,12 @@ static void	reset_tokens(t_env *env)
 {
 	env->lookahead = -1;
 	env->yyleng = 0;
+	if (env->state & HEREDOC_TK)
+	{
+		env->state &= ~HEREDOC_TK;
+		if (env->yytext)
+			env->yytext++;
+	}
 }
 
 static void	expansion_loop(t_env *env, char **expanded_str)
@@ -24,6 +30,8 @@ static void	expansion_loop(t_env *env, char **expanded_str)
 			env->state |= SINGLE_Q;
 		else if (env->yytext[curr_len] == '\'' && (env->state & SINGLE_Q))
 			env->state &= ~SINGLE_Q;
+		if (env->yytext[curr_len] == '<' && env->yytext[curr_len + 1] == '<')
+			env->state |= HEREDOC_TK;
 		curr_len++;
 	}
 	temp = ft_substr(env->yytext, 0, curr_len);
@@ -44,7 +52,8 @@ void	expand_dollar(t_env *env)
 	while (*(env->yytext))
 	{
 		expansion_loop(env, &expanded_str);
-		if (*env->yytext == '$' && !(env->state & SINGLE_Q))
+		if (*env->yytext == '$' && !(env->state & SINGLE_Q)
+			&& !(env->state & HEREDOC_TK))
 		{
 			advance(env, 0);
 			temp = dollar_expansion(env);
@@ -52,6 +61,12 @@ void	expand_dollar(t_env *env)
 			expanded_str = ft_strjoin(expanded_str, temp);
 			free(temp);
 			free(temp2);
+		}
+		if (env->state & HEREDOC_TK && *env->yytext == '$')
+		{
+			temp = expanded_str;
+			expanded_str = ft_strjoin(expanded_str, "$");
+			free(temp);
 		}
 		if (match(EOI, env))
 			break ;
