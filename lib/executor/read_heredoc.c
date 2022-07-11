@@ -6,7 +6,7 @@
 /*   By:  <evraskin@edu.hse.ru>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/11/29 00:19:17 by                   #+#    #+#             */
-/*   Updated: 2022/05/14 02:13:30 by                  ###   ########.fr       */
+/*   Updated: 2022/07/11 14:31:58 by eugeneras        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include "../../include/parse_tree.h"
 #include "../../include/env_state.h"
 #include "executor_private.h"
+#include <signal.h>
 
 extern t_env	*g_env;
 
