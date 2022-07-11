@@ -1,21 +1,28 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   lex.h                                              :+:      :+:    :+:   */
+/*   builtins_private.h                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: eugeneraskin <marvin@42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/16 01:40:55 by eugeneras         #+#    #+#             */
-/*   Updated: 2022/05/16 01:42:25 by                  ###   ########.fr       */
+/*   Created: 2022/05/16 15:12:33 by eugeneras         #+#    #+#             */
+/*   Updated: 2022/05/16 15:12:34 by eugeneras        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef LEX_H
-# define LEX_H
+#ifndef BUILTINS_PRIVATE_H
+# define BUILTINS_PRIVATE_H
 
-struct	s_env;
+# include "../../include/libft.h"
+# include <stdio.h>
+# include "../../include/env_state.h"
+# include "../../include/error.h"
+# include "../../include/parse_tree.h"
+# include "../../include/env_vars.h"
+# include "../../include/free.h"
+# include <readline/history.h>
+# include <sys/param.h>
 
-void	advance(struct	s_env *env, int skip_spaces);
-int		match(int token, struct	s_env *env);
+extern t_env	*g_env;
 
 #endif

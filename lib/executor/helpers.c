@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: eugeneraskin <marvin@42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/13 23:12:36 by eugeneras         #+#    #+#             */
-/*   Updated: 2022/05/13 23:12:38 by eugeneras        ###   ########.fr       */
+/*   Created: 2022/05/16 01:35:20 by eugeneras         #+#    #+#             */
+/*   Updated: 2022/05/16 01:35:23 by eugeneras        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,25 +18,31 @@
 #include "executor_private.h"
 #include <stdlib.h>
 
+static int	heredoc_case(t_cmd *cmd, t_env *env)
+{
+	int		heredoc_pipe[2];
+
+	if (pipe(heredoc_pipe) == -1)
+		return (report_func_error(env, "pipe"));
+	read_heredoc(cmd, env, heredoc_pipe[1]);
+	if (env->state & 0x400)
+		return (0);
+	if (cmd->last_input == 2)
+		dup2(heredoc_pipe[0], STDIN_FILENO);
+	else
+		close_descriptors(2, heredoc_pipe[0], heredoc_pipe[1]);
+	return (1);
+}
+
 int	set_input_fd(t_cmd *cmd, t_env *env, int custom_in)
 {
 	int		in_file;
 	int		i;
-	int		heredoc_pipe[2];
 
 	i = 0;
 	if (cmd->heredocs_top != -1)
-	{
-		if (pipe(heredoc_pipe) == -1)
-			return (report_func_error(env, "pipe"));
-		read_heredoc(cmd, env, heredoc_pipe[1]);
-		if (env->state & 0x400)
+		if (!heredoc_case(cmd, env))
 			return (0);
-		if (cmd->last_input == 2)
-			dup2(heredoc_pipe[0], STDIN_FILENO);
-		else
-			close_descriptors(2, heredoc_pipe[0], heredoc_pipe[1]);
-	}
 	while (i <= cmd->in_filenames_top)
 	{
 		in_file = open(cmd->in_filename[i], O_RDONLY);

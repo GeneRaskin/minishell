@@ -1,40 +1,38 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   env_state.h                                        :+:      :+:    :+:   */
+/*   main_helpers.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: eugeneraskin <marvin@42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/16 01:40:26 by eugeneras         #+#    #+#             */
+/*   Created: 2022/05/16 01:41:43 by eugeneras         #+#    #+#             */
 /*   Updated: 2022/05/16 01:42:25 by                  ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef ENV_STATE_H
-# define ENV_STATE_H
+#include "include/env_state.h"
+#include "include/env_vars.h"
+#include "include/libft.h"
+#include <stdio.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
-struct	s_scripts;
+void	init_env(t_env *env);
 
-typedef struct s_env_vars
+int	init_iter(t_env *env)
 {
-	char				*name;
-	char				*value;
-	struct s_env_vars	*next;
-}	t_env_vars;
-
-typedef struct s_env
-{
-	char				*yytext;
-	int					yyleng;
-	t_env_vars			*env_vars;
-	t_env_vars			*global_env_vars;
-	struct s_scripts	*parse_tree;
-	int					lookahead;
-	int					state;
-	int					exit_code;
-	char				*error_func_name;
-	char				*error_custom_msg;
-	int					opened_parens;
-}	t_env;
-
-#endif
+	init_env(env);
+	if (env->yytext && *(env->yytext))
+		add_history(env->yytext);
+	if (!env->yytext)
+	{
+		ft_putstr_fd("\n", STDOUT_FILENO);
+		free_env_vars(env->env_vars);
+		free_env_vars(env->global_env_vars);
+		clear_history();
+		exit(EXIT_SUCCESS);
+	}
+	else if (!*(env->yytext))
+		return (0);
+	return (1);
+}

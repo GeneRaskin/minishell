@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   substring.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lemmon <lemmon@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eugeneraskin <marvin@42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/13 22:19:21 by lemmon            #+#    #+#             */
-/*   Updated: 2022/05/13 22:19:21 by lemmon           ###   ########.fr       */
+/*   Created: 2022/05/14 02:52:18 by eugeneras         #+#    #+#             */
+/*   Updated: 2022/05/15 22:33:38 by                  ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,11 +24,6 @@ static char	*single_q(t_env *env)
 	if (match(SUBSTRING, env))
 	{
 		substr = ft_substr(env->yytext, 0, env->yyleng);
-		if (!substr)
-		{
-			set_err_func_name(env, "malloc");
-			return (substr);
-		}
 		advance(env, 0);
 		if (!match(SINGLE_QUOTE, env))
 		{
@@ -38,14 +33,7 @@ static char	*single_q(t_env *env)
 		}
 	}
 	else if (match(SINGLE_QUOTE, env))
-	{
 		substr = ft_substr(env->yytext, 0, 0);
-		if (!substr)
-		{
-			set_err_func_name(env, "malloc");
-			return (substr);
-		}
-	}
 	else
 	{
 		env->error_custom_msg = SYNTAX_ERR;
@@ -55,62 +43,36 @@ static char	*single_q(t_env *env)
 	return (substr);
 }
 
+static char	*match_var(t_env *env)
+{
+	char	*key;
+	char	*substr;
+
+	key = ft_substr(env->yytext, 0, env->yyleng);
+	if (!get(key, env->global_env_vars))
+	{
+		substr = get(key, env->env_vars);
+		if (substr)
+			substr = ft_strdup(substr);
+	}
+	else
+	{
+		substr = get(key, env->global_env_vars);
+		if (substr)
+			substr = ft_strdup(substr);
+	}
+	if (!substr)
+		substr = ft_strdup("");
+	advance(env, 0);
+	free(key);
+	return (substr);
+}
+
 char	*dollar_expansion(t_env *env)
 {
-	char	*substr;
-	char	*key;
-
 	advance(env, 0);
 	if (match(VAR, env))
-	{
-		key = ft_substr(env->yytext, 0, env->yyleng);
-		if (!key)
-		{
-			env->error_func_name = "malloc";
-			return (NULL);
-		}
-		if (!get(key, env->global_env_vars))
-		{
-			substr = get(key, env->env_vars);
-			if (substr)
-			{
-				substr = ft_strdup(substr);
-				if (!substr)
-				{
-					env->error_func_name = "malloc";
-					free(key);
-					return (NULL);
-				}
-			}
-		}
-		else
-		{
-			substr = get(key, env->global_env_vars);
-			if (substr)
-			{
-				substr = ft_strdup(substr);
-				if (!substr)
-				{
-					env->error_func_name = "malloc";
-					free(key);
-					return (NULL);
-				}
-			}
-		}
-		if (!substr)
-		{
-			substr = ft_strdup("");
-			if (!substr)
-			{
-				env->error_func_name = "malloc";
-				free(key);
-				return (NULL);
-			}
-		}
-		advance(env, 0);
-		free(key);
-		return (substr);
-	}
+		return (match_var(env));
 	else if (match(QUESTION_MARK, env))
 	{
 		advance(env, 0);

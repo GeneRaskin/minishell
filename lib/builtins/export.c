@@ -3,30 +3,46 @@
 /*                                                        :::      ::::::::   */
 /*   export.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lemmon <lemmon@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eugeneraskin <marvin@42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/13 22:37:32 by lemmon            #+#    #+#             */
-/*   Updated: 2022/05/13 22:44:33 by lemmon           ###   ########.fr       */
+/*   Created: 2022/05/16 15:12:40 by eugeneras         #+#    #+#             */
+/*   Updated: 2022/05/16 15:19:13 by                  ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../../include/libft.h"
-#include <stdio.h>
-#include "../../include/env_state.h"
-#include "../../include/error.h"
-#include "../../include/parse_tree.h"
-#include "../../include/env_vars.h"
-#include "../../include/free.h"
-#include <readline/history.h>
-#include <sys/param.h>
+#include "builtins_private.h"
+#include "../../include/builtins.h"
 
-void	ft_env(t_cmd *cmd, t_env *env);
+extern t_env	*g_env;
+
+static int	remainder_get_vars_values(char *arg, int var_len,
+										char **vars_values)
+{
+	int	val_len;
+
+	if (!arg[var_len])
+		vars_values[1] = NULL;
+	else
+	{
+		val_len = 0;
+		while (arg[var_len + 1 + val_len])
+			val_len++;
+		vars_values[1] = ft_substr(arg, var_len + 1, val_len);
+		if (!vars_values[1])
+		{
+			free(vars_values[0]);
+			free(vars_values);
+			return (0);
+		}
+		vars_values[2] = NULL;
+	}
+	return (1);
+}
 
 static char	**get_vars_values(char *arg)
 {
 	char	**vars_values;
 	int		var_len;
-	int		val_len;
 
 	var_len = 0;
 	while (arg[var_len] && arg[var_len] != '=')
@@ -43,30 +59,55 @@ static char	**get_vars_values(char *arg)
 		free(vars_values);
 		return (NULL);
 	}
-	if (!arg[var_len])
-		vars_values[1] = NULL;
+	if (!remainder_get_vars_values(arg, var_len, vars_values))
+		return (NULL);
+	return (vars_values);
+}
+
+static void	export_loop1(char **vars_values)
+{
+	char	*value;
+
+	value = get(vars_values[0], g_env->global_env_vars);
+	set(vars_values[0], vars_values[1],
+		&(g_env->global_env_vars), g_env);
+	if (get(vars_values[0], g_env->env_vars))
+		unset(vars_values[0], &(g_env->env_vars));
+	if (value)
+		free(vars_values[0]);
+	free(vars_values);
+}
+
+static void	export_loop2(char **vars_values)
+{
+	char	*value;
+
+	value = get(vars_values[0], g_env->env_vars);
+	if (value)
+	{
+		value = ft_strdup(value);
+		unset(vars_values[0], &(g_env->env_vars));
+		set(vars_values[0], value, &(g_env->global_env_vars), g_env);
+	}
 	else
 	{
-		val_len = 0;
-		while (arg[var_len + 1 + val_len])
-			val_len++;
-		vars_values[1] = ft_substr(arg, var_len + 1, val_len);
-		if (!vars_values[1])
+		value = get(vars_values[0], g_env->global_env_vars);
+		if (!value)
 		{
-			free(vars_values[0]);
-			free(vars_values);
-			return (NULL);
+			value = ft_strdup("");
+			set(vars_values[0], value,
+				&(g_env->global_env_vars), g_env);
 		}
-		vars_values[2] = NULL;
+		else
+			free(vars_values[0]);
 	}
-	return (vars_values);
+	free(vars_values);
 }
 
 void	export(t_cmd *cmd, t_env *env)
 {
 	int		i;
 	char	**vars_values;
-	char	*value;
 
 	i = 1;
 	if (cmd->argv_top == 0)
@@ -74,92 +115,20 @@ void	export(t_cmd *cmd, t_env *env)
 		ft_env(cmd, env);
 		return ;
 	}
-	else
+	while (i <= cmd->argv_top)
 	{
-		while (i <= cmd->argv_top)
+		vars_values = get_vars_values(cmd->argv[i]);
+		if (!vars_values)
 		{
-			vars_values = get_vars_values(cmd->argv[i]);
-			if (!vars_values)
-			{
-				env->error_func_name = "malloc";
-				env->exit_code = EXIT_FAILURE;
-				return ;
-			}
-			if (vars_values[1])
-			{
-				value = get(vars_values[0], env->global_env_vars);
-				set(vars_values[0], vars_values[1],
-					&(env->global_env_vars), env);
-				if (env->error_func_name)
-				{
-					free(vars_values[1]);
-					free(vars_values[0]);
-					free(vars_values);
-					env->exit_code = EXIT_FAILURE;
-					return ;
-				}
-				if (get(vars_values[0], env->env_vars))
-					unset(vars_values[0], &(env->env_vars));
-				if (value)
-					free(vars_values[0]);
-				free(vars_values);
-			}
-			else
-			{
-				value = get(vars_values[0], env->env_vars);
-				if (value)
-				{
-					value = ft_strdup(value);
-					if (value == NULL)
-					{
-						free(vars_values[0]);
-						free(vars_values);
-						env->exit_code = EXIT_FAILURE;
-						return ;
-					}
-					unset(vars_values[0], &(env->env_vars));
-					set(vars_values[0], value, &(env->global_env_vars), env);
-					if (env->error_func_name)
-					{
-						free(vars_values[0]);
-						free(vars_values);
-						free(value);
-						env->exit_code = EXIT_FAILURE;
-						return ;
-					}
-				}
-				else
-				{
-					value = get(vars_values[0], env->global_env_vars);
-					if (!value)
-					{
-						value = ft_strdup("");
-						if (!value)
-						{
-							env->error_func_name = "malloc";
-							env->exit_code = EXIT_FAILURE;
-							free(vars_values[0]);
-							free(vars_values);
-							return ;
-						}
-						set(vars_values[0], value,
-							&(env->global_env_vars), env);
-						if (env->error_func_name)
-						{
-							free(value);
-							free(vars_values[0]);
-							free(vars_values);
-							env->exit_code = EXIT_FAILURE;
-							return ;
-						}
-					}
-					else
-						free(vars_values[0]);
-				}
-				free(vars_values);
-			}
-			i++;
+			env->error_func_name = "malloc";
+			env->exit_code = EXIT_FAILURE;
+			return ;
 		}
+		if (vars_values[1])
+			export_loop1(vars_values);
+		else
+			export_loop2(vars_values);
+		i++;
 	}
 	env->exit_code = EXIT_SUCCESS;
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   env_vars.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lemmon <lemmon@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eugeneraskin <marvin@42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/13 22:09:04 by lemmon            #+#    #+#             */
-/*   Updated: 2022/05/13 22:15:02 by lemmon           ###   ########.fr       */
+/*   Created: 2022/05/16 15:14:10 by eugeneras         #+#    #+#             */
+/*   Updated: 2022/05/16 15:18:08 by                  ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,29 @@
 #include "../../include/libft.h"
 #include "../../include/error.h"
 
-void	free_env_var(t_env_vars *env_var);
-char	*get(char *key, t_env_vars *vars);
-void	free_env_vars(t_env_vars *vars);
-void	unset(char *key, t_env_vars **env_vars);
+void	free_env_var(t_env_vars *env_var)
+{
+	free(env_var->value);
+	free(env_var->name);
+	free(env_var);
+}
 
-static t_env_vars	*init_env_vars(char *key, char *value, t_env *env)
+char	*get(char *key, t_env_vars *vars)
+{
+	size_t	keylen;
+
+	while (vars)
+	{
+		keylen = ft_strlen(vars->name);
+		if (ft_strncmp(key, vars->name, keylen) == 0
+			&& keylen == ft_strlen(key))
+			return (vars->value);
+		vars = vars->next;
+	}
+	return (NULL);
+}
+
+t_env_vars	*init_env_vars(char *key, char *value, t_env *env)
 {
 	t_env_vars	*env_vars;
 
@@ -36,61 +53,40 @@ static t_env_vars	*init_env_vars(char *key, char *value, t_env *env)
 	return (env_vars);
 }
 
-static void	ptr(t_env_vars *vars_ptr, size_t keylen, char *key, char *value)
-{	
-	while (vars_ptr->next)
-	{
-		vars_ptr = vars_ptr->next;
-		keylen = ft_strlen(vars_ptr->name);
-		if (!ft_strncmp(key, vars_ptr->name, keylen)
-			&& keylen == ft_strlen(key))
-		{
-			free(vars_ptr->value);
-			vars_ptr->value = value;
-		}
-	}
-}	
+void	free_env_vars(t_env_vars *vars)
+{
+	t_env_vars	*curr;
 
-static void	ptr2(t_env_vars	*vars_ptr, char *key, char *value)
-{	
-	vars_ptr = vars_ptr->next;
-	vars_ptr->name = key;
-	vars_ptr->value = value;
-	vars_ptr->next = NULL;
+	curr = vars;
+	while (curr)
+	{
+		vars = vars->next;
+		free_env_var(curr);
+		curr = vars;
+	}
 }
 
-static int	check_vars(t_env_vars **vars, char *key, char *value, t_env *env)
+void	unset(char *key, t_env_vars **env_vars)
 {
-	if (!*vars)
-	{
-		*vars = init_env_vars(key, value, env);
-		return (1);
-	}
-	return (0);
-}
+	t_env_vars	*prev;
+	t_env_vars	*curr;
 
-void	set(char *key, char *value, t_env_vars **vars, t_env *env)
-{
-	t_env_vars	*vars_ptr;
-	size_t		keylen;
-
-	if (check_vars(vars, key, value, env))
-		return ;
-	vars_ptr = *vars;
-	keylen = ft_strlen(vars_ptr->name);
-	if (!ft_strncmp(key, vars_ptr->name, keylen)
-		&& keylen == ft_strlen(key))
+	curr = *env_vars;
+	if (curr != NULL && !ft_strncmp(key, curr->name, ft_strlen(curr->name))
+		&& ft_strlen(curr->name) == ft_strlen(key))
 	{
-		free(vars_ptr->value);
-		vars_ptr->value = value;
+		*env_vars = curr->next;
+		free_env_var(curr);
 		return ;
 	}
-	ptr(vars_ptr, keylen, key, value);
-	vars_ptr->next = (t_env_vars *) malloc(sizeof(t_env_vars));
-	if (!vars_ptr->next)
+	while (curr != NULL && (ft_strncmp(key, curr->name, ft_strlen(curr->name))
+			|| ft_strlen(curr->name) != ft_strlen(key)))
 	{
-		env->error_func_name = "malloc";
-		return ;
+		prev = curr;
+		curr = curr->next;
 	}
-	ptr2(vars_ptr, key, value);
+	if (curr == NULL)
+		return ;
+	prev->next = curr->next;
+	free_env_var(curr);
 }

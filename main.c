@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lemmon <lemmon@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eugeneraskin <marvin@42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/13 20:32:17 by lemmon            #+#    #+#             */
-/*   Updated: 2022/05/13 21:10:48 by lemmon           ###   ########.fr       */
+/*   Created: 2022/05/16 01:41:32 by eugeneras         #+#    #+#             */
+/*   Updated: 2022/05/16 01:41:34 by eugeneras        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@
 t_env	*g_env;
 
 void	expand_dollar(t_env *env);
-void	loop(t_env *env);
+int		init_iter(t_env *env);
 
 void	init_env(t_env *env)
 {
@@ -61,11 +61,28 @@ void	execute(t_env *env)
 	}
 }
 
-static	void	free_key_and_value(char **key_and_value, t_env *env)
+static void	loop(t_env *env)
 {
-	free(key_and_value[0]);
-	free(key_and_value[1]);
-	error(env);
+	char			*curr_line;
+
+	while (1)
+	{
+		if (!init_iter(env))
+			continue ;
+		curr_line = env->yytext;
+		while (ft_isspace(*(env->yytext)))
+			env->yytext++;
+		expand_dollar(env);
+		if (env->error_custom_msg || env->error_func_name)
+		{
+			error(env);
+			free(curr_line);
+			continue ;
+		}
+		env->parse_tree = statements(env);
+		free(curr_line);
+		execute(env);
+	}
 }
 
 static t_env_vars	*init_globals(t_env *env)
@@ -79,16 +96,13 @@ static t_env_vars	*init_globals(t_env *env)
 	while (*curr_var != NULL)
 	{
 		key_and_value = ft_split(*curr_var, '=');
-		if (key_and_value == NULL)
-		{
-			env->error_func_name = "malloc";
-			error(env);
-			curr_var++;
-			continue ;
-		}
 		set(key_and_value[0], key_and_value[1], &(global_env_vars), env);
 		if (env->error_func_name)
-			free_key_and_value(key_and_value, env);
+		{
+			free(key_and_value[0]);
+			free(key_and_value[1]);
+			error(env);
+		}
 		free(key_and_value);
 		curr_var++;
 	}

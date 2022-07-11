@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: eugeneraskin <marvin@42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/13 23:12:51 by eugeneras         #+#    #+#             */
-/*   Updated: 2022/05/13 23:12:53 by eugeneras        ###   ########.fr       */
+/*   Created: 2022/05/16 01:34:50 by eugeneras         #+#    #+#             */
+/*   Updated: 2022/05/16 01:38:28 by                  ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 struct	s_cmd;
 struct	s_env;
 struct	s_pipelist;
+struct	s_env_vars;
 
 typedef struct s_params
 {
@@ -46,5 +47,7 @@ int		catch_and_wait(struct s_env *env, int *status);
 int		report_func_error(struct s_env *env, char *func_name);
 int		init_pipe(struct s_pipelist *curr_pipelist,
 			struct s_env *env, int *second_p);
+int		construct_envp_loop(struct s_env_vars **globals, char **envp,
+			int *len);
 
 #endif

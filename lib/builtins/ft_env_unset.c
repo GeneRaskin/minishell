@@ -1,24 +1,16 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   env_unset.c                                        :+:      :+:    :+:   */
+/*   ft_env_unset.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lemmon <lemmon@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eugeneraskin <marvin@42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/13 22:39:43 by lemmon            #+#    #+#             */
-/*   Updated: 2022/05/13 22:41:32 by lemmon           ###   ########.fr       */
+/*   Created: 2022/05/16 15:12:46 by eugeneras         #+#    #+#             */
+/*   Updated: 2022/05/16 15:12:47 by eugeneras        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../../include/libft.h"
-#include <stdio.h>
-#include "../../include/env_state.h"
-#include "../../include/error.h"
-#include "../../include/parse_tree.h"
-#include "../../include/env_vars.h"
-#include "../../include/free.h"
-#include <readline/history.h>
-#include <sys/param.h>
+#include "builtins_private.h"
 
 void	ft_env(t_cmd *cmd, t_env *env)
 {

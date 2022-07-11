@@ -3,16 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   item.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lemmon <lemmon@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eugeneraskin <marvin@42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/05/13 22:19:12 by lemmon            #+#    #+#             */
-/*   Updated: 2022/05/13 22:19:13 by lemmon           ###   ########.fr       */
+/*   Created: 2022/05/14 02:52:11 by eugeneras         #+#    #+#             */
+/*   Updated: 2022/05/14 02:52:12 by eugeneras        ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "parser_private.h"
 
-void		word(t_env *env, t_curr_items_ptrs *ptrs);
 t_scripts	*statements(t_env *env);
 
 static t_cmd	*init_cmd(t_env *env)
